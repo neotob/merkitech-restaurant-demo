@@ -4,8 +4,11 @@ Reusable starting point for the **Essentials (static)** package — see `merkite
 `CLAUDE.md` for the full pricing/positioning context. This repo is meant to be cloned per client,
 not edited in place and reused directly.
 
-Currently filled in with placeholder content for a fictional restaurant ("Aloha Plate Kitchen")
-as a working example — replace everything client-specific before delivering.
+**This particular repo is a live internal demo, not a template clone in progress** - it's filled
+in for a fictional sit-down restaurant ("Hale Kai Restaurant"), the counterpart to
+`merkitech-essentials-starter`'s own food-truck demo. See its `CLAUDE.md` for why. The checklist
+below is still the reference for starting a *new* client project from the actual template
+(`merkitech-essentials-starter`, not this repo).
 
 ## Starting a new client project
 
