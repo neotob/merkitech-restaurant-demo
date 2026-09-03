@@ -111,16 +111,16 @@ function mapsSearchUrl(query) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
-// A food truck's day-by-day spot, one line behind that day's hours in the
-// same table (not a separate section) - see CLAUDE.md's "Locations" note.
-// Since migration 013 (2026-09-04) `row` is a saved Locations-table entry
-// (name/address/maps_url), not a freeform string - prefers an exact pinned
-// maps_url when the owner set one, otherwise falls back to a Maps search of
-// the address, then the name.
+// A food truck's day-by-day spot - its own 3rd table column (Day | Time |
+// Location, see buildHoursTableRows()) as of 2026-09-04, previously a 4th
+// element tacked onto the Time cell. Since migration 013 (2026-09-04) `row`
+// is a saved Locations-table entry (name/address/maps_url), not a freeform
+// string - prefers an exact pinned maps_url when the owner set one,
+// otherwise falls back to a Maps search of the address, then the name.
 function buildLocationLink(row) {
     if (!row.location_name) return '';
     const href = row.location_maps_url || mapsSearchUrl(row.location_address || row.location_name);
-    return ` <a class="hours-location" href="${escapeHtml(href)}" target="_blank" rel="noopener">📍 ${escapeHtml(row.location_name)}</a>`;
+    return `<a class="hours-location" href="${escapeHtml(href)}" target="_blank" rel="noopener">📍 ${escapeHtml(row.location_name)}</a>`;
 }
 
 // Per-day location links only render in 'per_day' mode (ClientRepository::
@@ -128,15 +128,30 @@ function buildLocationLink(row) {
 // right-hand Location column instead (see buildLocationBlock()), so
 // repeating it on every row would be redundant even though the data might
 // still be sitting on some of these rows from before a client switched
-// modes.
+// modes. A 'per_day' client always gets a 3rd <td> per row (empty string
+// when that particular day has no location) rather than omitting the cell
+// on days without one - every row needs the same cell count for the
+// columns to actually line up (see index.html's `:has(td:nth-child(3))`
+// CSS, which detects "3-column mode" this way and would misalign a mix of
+// 2- and 3-cell rows).
 function buildHoursTableRows(hours, client) {
-    const showPerDayLocation = clientHasFeature(client, 'locations') && client.location_mode === 'per_day';
+    const showPerDayLocation = isPerDayLocationClient(client);
     return DAY_ORDER.map(day => {
         const row = hours[day];
         const value = isClosed(row) ? 'Closed' : `${formatClockTime(row.open_time)} – ${formatClockTime(row.close_time)}`;
-        const locationPart = showPerDayLocation ? buildLocationLink(row) : '';
-        return `                            <tr data-day="${day}"><td>${DAY_LABELS[day]}</td><td>${value}${locationPart}</td></tr>`;
+        const locationCell = showPerDayLocation ? `<td>${buildLocationLink(row)}</td>` : '';
+        return `                            <tr data-day="${day}"><td>${DAY_LABELS[day]}</td><td>${value}</td>${locationCell}</tr>`;
     }).join('\n');
+}
+
+// Only the heading directly above the hours table (see PORTAL:HOURS-HEADING
+// in index.html) - suppressed for a 'per_day' client since the section's
+// own "Hours & Location" <h2> right above already says it, and with the
+// second grid column also gone (see buildLocationColumn()) repeating
+// "Hours" here read as a redundant middle heading rather than a real
+// subtitle.
+function buildHoursHeading(client) {
+    return isPerDayLocationClient(client) ? '' : '<h3>Hours</h3>';
 }
 
 // yyyy-mm-dd -> 'mon'/'tue'/etc, computed in UTC so it can't shift a day
@@ -434,6 +449,14 @@ function clientHasFeature(client, feature) {
     return String(client.enabled_features || '').split(',').includes(feature);
 }
 
+// Shared by buildHoursTableRows(), buildHoursHeading(), and
+// buildLocationColumn() - all three branch on exactly this same condition,
+// factored out 2026-09-04 once a 3rd call site made repeating the inline
+// check three times worth avoiding.
+function isPerDayLocationClient(client) {
+    return clientHasFeature(client, 'locations') && client.location_mode === 'per_day';
+}
+
 // Content of the second grid column of "Hours & Location" - address/phone
 // are portal-managed (added 2026-09-03), not hand-edited HTML. Only reached
 // for a client NOT in 'per_day' locations mode (see buildLocationColumn()
@@ -476,7 +499,7 @@ function buildLocationBlock(client) {
 // the row - a CSS grid with only one child does this automatically (see
 // .info-grid in index.html), no layout class needed here.
 function buildLocationColumn(client) {
-    if (clientHasFeature(client, 'locations') && client.location_mode === 'per_day') {
+    if (isPerDayLocationClient(client)) {
         return '';
     }
 
@@ -500,6 +523,7 @@ async function main() {
     let html = fs.readFileSync('index.html', 'utf8');
     html = updateJsonLd(html, hours, specialHours, client);
     html = updateEventsJsonLd(html, events);
+    html = replaceBetweenMarkers(html, 'HOURS-HEADING', buildHoursHeading(client));
     html = replaceBetweenMarkers(html, 'HOURS-TABLE', buildHoursTableRows(hours, client));
     html = replaceBetweenMarkers(html, 'SPECIAL-HOURS', buildSpecialHoursSection(specialHours));
     html = replaceBetweenMarkers(html, 'LOCATION-COLUMN', buildLocationColumn(client));
