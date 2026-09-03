@@ -1,0 +1,75 @@
+name: Rebuild from portal
+
+# workflow_dispatch: manual, via GitHub's UI or `gh workflow run`.
+# repository_dispatch: fired automatically by the portal (SiteRebuilder.php)
+# right after a hours/menu save, IF the portal has a github_token configured -
+# see merkitech-portal/CLAUDE.md's "automatic rebuild trigger" section. Until
+# that token exists, this event type is simply never sent, so nothing about
+# this workflow needs to change to support "manual only" vs "automatic" -
+# it's the portal side that decides whether to fire it.
+on:
+  workflow_dispatch: {}
+  repository_dispatch:
+    types: [portal-content-updated]
+
+permissions:
+  contents: write
+
+# A run of several saves in quick succession (e.g. reordering a whole menu
+# list one drag at a time) fires this workflow once per save - each one is
+# cheap on its own, but two overlapping runs both trying to `git push` the
+# regenerated index.html race each other, and the loser fails outright (hit
+# for real on 2026-09-02). cancel-in-progress means a newer save's run
+# cancels whatever older run is still going, so only the most up-to-date one
+# ever reaches the commit/push step - no separate queue or delay needed.
+concurrency:
+  group: rebuild-from-portal
+  cancel-in-progress: true
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Fetch portal data and regenerate index.html
+        env:
+          PORTAL_URL: ${{ secrets.PORTAL_URL }}
+          PORTAL_API_TOKEN: ${{ secrets.PORTAL_API_TOKEN }}
+          PORTAL_CLIENT_ID: ${{ secrets.PORTAL_CLIENT_ID }}
+        run: node .github/scripts/rebuild-from-portal.js
+
+      - name: Commit and push if index.html changed
+        run: |
+          git config user.name "portal-rebuild-bot"
+          git config user.email "actions@github.com"
+          if git diff --quiet index.html; then
+            echo "No changes from portal - nothing to commit."
+            exit 0
+          fi
+          git add index.html
+          git commit -m "Rebuild from portal data"
+
+          # cancel-in-progress (see the concurrency block above) only
+          # protects against two runs of *this* workflow racing each other -
+          # it does nothing about a plain `git push` from someone's own
+          # machine landing in between this job's commit and its push,
+          # which happened for real on 2026-09-02 despite that fix. Retry
+          # with a rebase onto whatever landed first instead of failing
+          # outright - this job only ever touches the PORTAL-marker content
+          # inside index.html, so a rebase has nothing real to conflict with
+          # unless someone hand-edited inside those markers (which isn't
+          # supported anyway - see CLAUDE.md).
+          for attempt in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push rejected (attempt $attempt/5) - pulling and retrying..."
+            git pull --rebase
+          done
+          echo "::error::push still failing after 5 attempts"
+          exit 1
