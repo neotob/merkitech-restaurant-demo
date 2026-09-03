@@ -88,24 +88,7 @@
          portal returns upcoming events (the "events" feature is enabled for this client and has
          entries) - no script tag at all otherwise. Don't hand-edit - see CLAUDE.md. -->
     <!-- PORTAL:EVENTS-JSONLD:START -->
-<script type="application/ld+json">
-    [
-      {
-        "@type": "Event",
-        "name": "Kapolei Night Market Pop-Up",
-        "startDate": "2026-09-13T17:00:00-10:00",
-        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
-        "eventStatus": "https://schema.org/EventScheduled",
-        "endDate": "2026-09-13T21:00:00-10:00",
-        "description": "Find our food truck at the monthly night market - fresh plates and poke bowls.",
-        "location": {
-          "@type": "Place",
-          "name": "Kapolei Night Market",
-          "address": "91-5431 Kapolei Pkwy, Kapolei, HI 96707"
-        }
-      }
-    ]
-    </script>
+
 <!-- PORTAL:EVENTS-JSONLD:END -->
 
     <!-- Cloudflare Web Analytics — free, cookie-less, no consent banner needed. Register this
@@ -919,184 +902,81 @@
                 <div class="menu-filters" id="menuFilters">
                     <button class="menu-filter active" data-filter="all" aria-pressed="true">All</button>
                     <!-- PORTAL:MENU-FILTERS:START -->
-                    <button class="menu-filter" data-filter="plates" aria-pressed="false">Plates</button>
+                    <button class="menu-filter" data-filter="starters" aria-pressed="false">Starters</button>
+                    <button class="menu-filter" data-filter="entrees" aria-pressed="false">Entrees</button>
                     <button class="menu-filter" data-filter="desserts" aria-pressed="false">Desserts</button>
-                    <button class="menu-filter" data-filter="appetizers" aria-pressed="false">Appetizers</button>
-                    <button class="menu-filter" data-filter="poke-bowls" aria-pressed="false">Poke Bowls</button>
-                    <button class="menu-filter" data-filter="sides" aria-pressed="false">Sides</button>
-                    <button class="menu-filter" data-filter="drinks" aria-pressed="false">Drinks</button>
-                    <button class="menu-filter" data-filter="specials" aria-pressed="false">Specials</button>
 <!-- PORTAL:MENU-FILTERS:END -->
                 </div>
 
                 <div class="menu-grid" id="menuGrid">
                     <!-- PORTAL:MENU-GRID:START -->
-                    <h3 class="menu-category-heading" data-category-heading="plates">Plates</h3>
-                    <div class="menu-item" data-category="plates">
-                        <span class="price">$13</span>
-                        <h4>Loco Moco</h4>
-                        <p>Rice, beef patty, brown gravy, fried egg.</p>
+                    <h3 class="menu-category-heading" data-category-heading="starters">Starters</h3>
+                    <div class="menu-item" data-category="starters">
+                        <span class="price">$16</span>
+                        <h4>Poke Nachos</h4>
+                        <p>Ahi poke, wonton chips, spicy aioli, pickled onion</p>
                     </div>
-                    <div class="menu-item" data-category="plates">
+                    <div class="menu-item" data-category="starters">
                         <span class="price">$14</span>
-                        <h4>Kalua Pork Plate</h4>
-                        <p>Slow-roasted kalua pork, two scoops rice, mac salad.</p>
+                        <h4>Kalua Pork Sliders</h4>
+                        <p>Slow-smoked kalua pork, cabbage slaw, Hawaiian sweet rolls</p>
+                    </div>
+                    <div class="menu-item" data-category="starters">
+                        <span class="price">$15</span>
+                        <h4>Coconut Shrimp</h4>
+                        <p>Crispy coconut-crusted shrimp, mango dipping sauce</p>
+                    </div>
+                    <div class="menu-item" data-category="starters">
+                        <span class="price">$12</span>
+                        <h4>Loco Moco Bites</h4>
+                        <p>Mini rice patties, seared beef, gravy, quail egg</p>
+                    </div>
+                    <h3 class="menu-category-heading" data-category-heading="entrees">Entrees</h3>
+                    <div class="menu-item" data-category="entrees">
+                        <span class="price">$32</span>
+                        <h4>Grilled Mahi Mahi</h4>
+                        <p>Fresh catch, lemon butter, seasonal vegetables</p>
+                    </div>
+                    <div class="menu-item" data-category="entrees">
+                        <span class="price">$26</span>
+                        <h4>Huli Huli Chicken</h4>
+                        <p>Charcoal-grilled, pineapple glaze, rice, mac salad</p>
+                    </div>
+                    <div class="menu-item" data-category="entrees">
+                        <span class="price">$34</span>
+                        <h4>Kalbi Short Ribs</h4>
+                        <p>Korean-style marinated short ribs, kimchi rice</p>
+                    </div>
+                    <div class="menu-item" data-category="entrees">
+                        <span class="price">$30</span>
+                        <h4>Seafood Laulau</h4>
+                        <p>Shrimp, fish, and pork wrapped in taro leaf, steamed</p>
+                    </div>
+                    <div class="menu-item" data-category="entrees">
+                        <span class="price">$38</span>
+                        <h4>Garlic Butter Steak</h4>
+                        <p>Grilled ribeye, garlic butter, roasted potatoes</p>
+                    </div>
+                    <div class="menu-item" data-category="entrees">
+                        <span class="price">$22</span>
+                        <h4>Vegetable Stir-Fry</h4>
+                        <p>Seasonal vegetables, tofu, ginger-soy glaze</p>
                     </div>
                     <h3 class="menu-category-heading" data-category-heading="desserts">Desserts</h3>
                     <div class="menu-item" data-category="desserts">
-                        <span class="price">$5</span>
-                        <h4>Haupia</h4>
-                        <p>Coconut milk custard.</p>
+                        <span class="price">$9</span>
+                        <h4>Haupia Pie</h4>
+                        <p>Coconut cream pie, toasted coconut flakes</p>
                     </div>
                     <div class="menu-item" data-category="desserts">
-                        <span class="price">$6</span>
-                        <h4>Malasadas (3pc)</h4>
-                        <p>Portuguese fried dough, sugar coated.</p>
-                    </div>
-                    <h3 class="menu-category-heading" data-category-heading="appetizers">Appetizers</h3>
-                    <div class="menu-item" data-category="appetizers">
-                        <span class="price">$4.50</span>
-                        <h4>Spam Musubi</h4>
-                        <p>Grilled Spam over rice, wrapped in nori.</p>
-                    </div>
-                    <div class="menu-item" data-category="appetizers">
                         <span class="price">$8</span>
-                        <h4>Fried Saimin</h4>
-                        <p>Crispy pan-fried noodles with veggies and char siu.</p>
+                        <h4>Malasadas</h4>
+                        <p>Portuguese-style donuts, li hing mui sugar</p>
                     </div>
-                    <div class="menu-item" data-category="appetizers">
-                        <span class="price">$8.50</span>
-                        <h4>Chicken Karaage</h4>
-                        <p>Japanese-style fried chicken bites with spicy mayo.</p>
-                    </div>
-                    <div class="menu-item" data-category="appetizers">
-                        <span class="price">$12</span>
-                        <h4>Poke Nachos</h4>
-                        <p>Wonton chips topped with ahi poke and spicy aioli.</p>
-                    </div>
-                    <div class="menu-item" data-category="appetizers">
-                        <span class="price">$9.50</span>
-                        <h4>Kalbi Short Rib Bites</h4>
-                        <p>Korean-style marinated short ribs, grilled.</p>
-                    </div>
-                    <div class="menu-item" data-category="appetizers">
-                        <span class="price">$4</span>
-                        <h4>Edamame</h4>
-                        <p>Steamed and salted, served warm.</p>
-                    </div>
-                    <h3 class="menu-category-heading" data-category-heading="poke-bowls">Poke Bowls</h3>
-                    <div class="menu-item" data-category="poke-bowls">
-                        <span class="price">$15</span>
-                        <h4>Ahi Poke Bowl</h4>
-                        <p>Classic shoyu ahi over rice with furikake.</p>
-                    </div>
-                    <div class="menu-item" data-category="poke-bowls">
-                        <span class="price">$15.50</span>
-                        <h4>Spicy Tuna Bowl</h4>
-                        <p>Spicy ahi poke, cucumber, and sriracha aioli.</p>
-                    </div>
-                    <div class="menu-item" data-category="poke-bowls">
-                        <span class="price">$16</span>
-                        <h4>Salmon Poke Bowl</h4>
-                        <p>Fresh salmon poke with avocado and edamame.</p>
-                    </div>
-                    <div class="menu-item" data-category="poke-bowls">
-                        <span class="price">$13</span>
-                        <h4>Tofu Poke Bowl</h4>
-                        <p>Marinated tofu poke, a vegetarian favorite.</p>
-                    </div>
-                    <div class="menu-item" data-category="poke-bowls">
-                        <span class="price">$16.50</span>
-                        <h4>Garlic Shrimp Poke Bowl</h4>
-                        <p>Garlic butter shrimp over rice with veggies.</p>
-                    </div>
-                    <h3 class="menu-category-heading" data-category-heading="sides">Sides</h3>
-                    <div class="menu-item" data-category="sides">
-                        <span class="price">$2</span>
-                        <h4>White Rice</h4>
-                        <p>Steamed white rice.</p>
-                    </div>
-                    <div class="menu-item" data-category="sides">
-                        <span class="price">$2.50</span>
-                        <h4>Brown Rice</h4>
-                        <p>Steamed brown rice.</p>
-                    </div>
-                    <div class="menu-item" data-category="sides">
-                        <span class="price">$3</span>
-                        <h4>Mac Salad</h4>
-                        <p>Creamy Hawaiian-style macaroni salad.</p>
-                    </div>
-                    <div class="menu-item" data-category="sides">
-                        <span class="price">$3.50</span>
-                        <h4>Kimchi</h4>
-                        <p>House-made spicy fermented cabbage.</p>
-                    </div>
-                    <div class="menu-item" data-category="sides">
-                        <span class="price">$3.50</span>
-                        <h4>Grilled Corn</h4>
-                        <p>Charred corn on the cob with butter.</p>
-                    </div>
-                    <div class="menu-item" data-category="sides">
-                        <span class="price">$4.50</span>
-                        <h4>Sweet Potato Fries</h4>
-                        <p>Crispy sweet potato fries.</p>
-                    </div>
-                    <h3 class="menu-category-heading" data-category-heading="drinks">Drinks</h3>
-                    <div class="menu-item" data-category="drinks">
-                        <span class="price">$3</span>
-                        <h4>Guava Juice</h4>
-                        <p>Chilled guava juice.</p>
-                    </div>
-                    <div class="menu-item" data-category="drinks">
-                        <span class="price">$3</span>
-                        <h4>POG</h4>
-                        <p>Passion-orange-guava juice blend.</p>
-                    </div>
-                    <div class="menu-item" data-category="drinks">
-                        <span class="price">$2.50</span>
-                        <h4>Iced Tea</h4>
-                        <p>Fresh brewed, unsweetened or sweet.</p>
-                    </div>
-                    <div class="menu-item" data-category="drinks">
-                        <span class="price">$3.50</span>
-                        <h4>Coconut Water</h4>
-                        <p>Pure coconut water, chilled.</p>
-                    </div>
-                    <div class="menu-item" data-category="drinks">
-                        <span class="price">$2</span>
-                        <h4>Soda</h4>
-                        <p>Assorted canned sodas.</p>
-                    </div>
-                    <div class="menu-item" data-category="drinks">
-                        <span class="price">$3</span>
-                        <h4>Lemonade</h4>
-                        <p>Fresh-squeezed lemonade.</p>
-                    </div>
-                    <h3 class="menu-category-heading" data-category-heading="specials">Specials</h3>
-                    <div class="menu-item" data-category="specials">
-                        <span class="price">$13.50</span>
-                        <h4>Huli Huli Chicken Plate</h4>
-                        <p>Grilled huli huli chicken, two scoops rice, mac salad.</p>
-                    </div>
-                    <div class="menu-item" data-category="specials">
-                        <span class="price">$14</span>
-                        <h4>Kalua Pig Plate</h4>
-                        <p>Slow-roasted kalua pig with cabbage, rice, mac salad.</p>
-                    </div>
-                    <div class="menu-item" data-category="specials">
-                        <span class="price">$13.50</span>
-                        <h4>Teriyaki Beef Plate</h4>
-                        <p>Grilled teriyaki beef, rice, mac salad.</p>
-                    </div>
-                    <div class="menu-item" data-category="specials">
-                        <span class="price">$15.50</span>
-                        <h4>Mixed Plate</h4>
-                        <p>Choice of two meats, rice, mac salad.</p>
-                    </div>
-                    <div class="menu-item" data-category="specials">
-                        <span class="price">$12.50</span>
-                        <h4>Vegetarian Plate</h4>
-                        <p>Tofu stir-fry, rice, seasonal veggies.</p>
+                    <div class="menu-item" data-category="desserts">
+                        <span class="price">$10</span>
+                        <h4>Mango Sticky Rice</h4>
+                        <p>Sweet coconut rice, fresh mango</p>
                     </div>
 <!-- PORTAL:MENU-GRID:END -->
                     <!-- Not portal-generated - stays outside the PORTAL markers so a rebuild
@@ -1118,25 +998,20 @@
                              hand-edit between the PORTAL markers - see CLAUDE.md. -->
                         <table class="hours-table" id="regularHoursTable">
                             <!-- PORTAL:HOURS-TABLE:START -->
-                            <tr data-day="mon"><td>Monday</td><td>10:00 AM – 8:00 PM <a class="hours-location" href="https://www.google.com/maps/search/?api=1&amp;query=Kapolei%20Night%20Market" target="_blank" rel="noopener">📍 Kapolei Night Market</a></td></tr>
-                            <tr data-day="tue"><td>Tuesday</td><td>10:00 AM – 8:00 PM <a class="hours-location" href="https://www.google.com/maps/search/?api=1&amp;query=Ko%20Olina%20Farmers%20Market" target="_blank" rel="noopener">📍 Ko Olina Farmers Market</a></td></tr>
-                            <tr data-day="wed"><td>Wednesday</td><td>10:00 AM – 8:00 PM</td></tr>
-                            <tr data-day="thu"><td>Thursday</td><td>10:00 AM – 8:00 PM</td></tr>
-                            <tr data-day="fri"><td>Friday</td><td>10:00 AM – 8:00 PM <a class="hours-location" href="https://www.google.com/maps/search/?api=1&amp;query=Waipahu%20Town%20Market" target="_blank" rel="noopener">📍 Waipahu Town Market</a></td></tr>
-                            <tr data-day="sat"><td>Saturday</td><td>10:00 AM – 8:00 PM</td></tr>
-                            <tr data-day="sun"><td>Sunday</td><td>12:00 PM – 6:00 PM</td></tr>
+                            <tr data-day="mon"><td>Monday</td><td>Closed</td></tr>
+                            <tr data-day="tue"><td>Tuesday</td><td>5:00 PM – 9:00 PM</td></tr>
+                            <tr data-day="wed"><td>Wednesday</td><td>5:00 PM – 9:00 PM</td></tr>
+                            <tr data-day="thu"><td>Thursday</td><td>5:00 PM – 9:00 PM</td></tr>
+                            <tr data-day="fri"><td>Friday</td><td>5:00 PM – 10:00 PM</td></tr>
+                            <tr data-day="sat"><td>Saturday</td><td>5:00 PM – 10:00 PM</td></tr>
+                            <tr data-day="sun"><td>Sunday</td><td>4:00 PM – 8:00 PM</td></tr>
 <!-- PORTAL:HOURS-TABLE:END -->
                         </table>
                         <!-- Regenerated the same way - the whole block (heading included) is
                              emitted only when the portal has upcoming special-hours entries, and
                              is empty otherwise. Don't hand-edit - see CLAUDE.md. -->
                         <!-- PORTAL:SPECIAL-HOURS:START -->
-                        <div class="special-hours">
-                            <h4>Upcoming hours changes</h4>
-                            <table class="hours-table">
-                                <tr data-date="2026-09-07" data-day="mon"><td>Sep 7</td><td>12:00 PM – 4:00 PM <span class="special-hours-note">(Labor Day - shortened hours)</span></td></tr>
-                            </table>
-                        </div>
+
 <!-- PORTAL:SPECIAL-HOURS:END -->
                     </div>
                     <!-- Regenerated by .github/scripts/rebuild-from-portal.js - the whole second
@@ -1151,7 +1026,11 @@
                          .info-grid, no extra class needed). Don't hand-edit between the PORTAL
                          markers. -->
                     <!-- PORTAL:LOCATION-COLUMN:START -->
-
+                    <div>
+                        <h3><a href="https://maps.google.com/?q=456+Plumeria+Lane,+Kapolei,+HI+96707" target="_blank" rel="noopener">Hale Kai Restaurant</a></h3>
+                        <p>456 Plumeria Lane, Kapolei, HI 96707</p>
+                        <p style="margin-top: 1rem;"><span aria-hidden="true">📞</span> (808) 555-0200</p>
+                    </div>
 <!-- PORTAL:LOCATION-COLUMN:END -->
                 </div>
             </div>
@@ -1160,25 +1039,7 @@
         <!-- The entire section (heading included) is emitted only when the portal has upcoming
              events for this client - empty otherwise. Don't hand-edit - see CLAUDE.md. -->
         <!-- PORTAL:EVENTS-SECTION:START -->
-                <section class="section" id="events">
-                    <div class="container">
-                        <h2>Upcoming Events</h2>
-                        <div class="events-list">
-                    <div class="event-card">
-                        <div class="event-date-badge">
-                            <span class="day">13</span>
-                            <span class="month">Sep</span>
-                        </div>
-                        <div class="event-details">
-                            <h3>Kapolei Night Market Pop-Up</h3>
-                            <p class="event-time">5:00 PM – 9:00 PM</p>
-                            <p>Find our food truck at the monthly night market - fresh plates and poke bowls.</p>
-                            <p class="event-location">📍 <a href="https://www.google.com/maps/search/?api=1&query=91-5431%20Kapolei%20Pkwy%2C%20Kapolei%2C%20HI%2096707" target="_blank" rel="noopener">Kapolei Night Market — 91-5431 Kapolei Pkwy, Kapolei, HI 96707</a></p>
-                        </div>
-                    </div>
-                        </div>
-                    </div>
-                </section>
+
 <!-- PORTAL:EVENTS-SECTION:END -->
 
         <section class="contact" id="contact">
