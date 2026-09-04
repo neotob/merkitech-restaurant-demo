@@ -13,6 +13,17 @@ history, Cloudflare deploy quirks, the customization checklist) - none of that i
 on purpose, to avoid two copies of the same explanation drifting apart. This file only covers what's
 actually specific to *this* clone.
 
+**Shared logic can silently drift out of sync - it already did once.** Because this is an
+independent clone, not a symlink or shared package, a bug fix or feature landing in
+`merkitech-essentials-starter`'s `.github/scripts/rebuild-from-portal.js` (or the matching
+structural markup in its `index.html`) does **not** automatically reach this repo. That happened
+for real on 2026-09-04: this repo was still on the pre-fix single-date special-hours model and the
+pre-fix separate MENU-FILTERS/MENU-GRID markers (instead of one combined MENU-SECTION) for about a
+day after the template moved on, until both were manually ported over in the same session that
+built this note. When picking up template-side work, check whether this repo (and
+`merkitech-essentials-starter` itself, which is also `demo.merkitech.com`) needs the same change
+ported - there's no automated mechanism that does this for you.
+
 **Why a second demo exists**: `merkitech-portal`'s "Locations" feature (see that repo's
 `CLAUDE.md`, "Locations entity, location_mode, and the General settings page") has two real modes -
 `'per_day'` (a different location each day, what the food-truck demo exercises) and `'default'`

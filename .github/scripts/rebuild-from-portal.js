@@ -93,6 +93,16 @@ function formatSpecialDate(isoDate) {
     });
 }
 
+// A single day prints as before ("Sep 7"); a real range (portal migration
+// 017, 2026-09-04) prints both ends ("Sep 10 – Sep 24") - always with both
+// months spelled out rather than trying to compress a same-month range, to
+// keep this simple and avoid a second, subtly-different date format on the
+// same page.
+function formatSpecialDateRange(startIso, endIso) {
+    if (startIso === endIso) return formatSpecialDate(startIso);
+    return `${formatSpecialDate(startIso)} – ${formatSpecialDate(endIso)}`;
+}
+
 function isAvailable(item) {
     return !(item.is_available === 0 || item.is_available === '0' || item.is_available === false);
 }
@@ -154,16 +164,6 @@ function buildHoursHeading(client) {
     return isPerDayLocationClient(client) ? '' : '<h3>Hours</h3>';
 }
 
-// yyyy-mm-dd -> 'mon'/'tue'/etc, computed in UTC so it can't shift a day
-// under the runner's local timezone - same reasoning as formatSpecialDate
-// just above. Used to tie a special-hours row back to its regular-hours
-// row client-side (see the "highlight this week's special hours" script).
-const DOW_SLUGS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-function dayOfWeekSlug(isoDate) {
-    const [y, m, d] = isoDate.split('-').map(Number);
-    return DOW_SLUGS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
-}
-
 function buildOpeningHoursSpecification(hours) {
     return DAY_ORDER
         .filter(day => !isClosed(hours[day]))
@@ -177,18 +177,20 @@ function buildOpeningHoursSpecification(hours) {
 
 // specialOpeningHoursSpecification overrides the regular weekly hours above
 // for specific dates (holiday closures, one-off event hours) - validFrom/
-// validThrough pin it to a single day. Bots don't benefit from a "don't show
-// it if it's too far out" cutoff the way a human reading the page does, so
-// every future-dated entry the portal returns goes in, with no date-range
-// filtering here (the portal's own upcomingForClient() already excludes past
-// dates). A closed day is expressed as opens/closes both "00:00" rather than
-// omitting them - the more broadly-recognized convention for "closed on this
-// date" in this schema.
+// validThrough span the whole range (portal migration 017, 2026-09-04;
+// end_date equals date for an ordinary single day, so this covers both
+// without a branch). Bots don't benefit from a "don't show it if it's too
+// far out" cutoff the way a human reading the page does, so every
+// future-dated entry the portal returns goes in, with no date-range
+// filtering here (the portal's own upcomingForClient() already excludes
+// entries that have fully ended). A closed day is expressed as opens/closes
+// both "00:00" rather than omitting them - the more broadly-recognized
+// convention for "closed on this date" in this schema.
 function buildSpecialOpeningHoursSpecification(specialHours) {
     return specialHours.map(entry => ({
         '@type': 'OpeningHoursSpecification',
         validFrom: entry.date,
-        validThrough: entry.date,
+        validThrough: entry.end_date || entry.date,
         opens: isClosed(entry) ? '00:00' : entry.open_time.slice(0, 5),
         closes: isClosed(entry) ? '00:00' : entry.close_time.slice(0, 5),
     }));
@@ -198,11 +200,17 @@ function buildSpecialHoursSection(specialHours) {
     if (!specialHours.length) return '';
 
     const rows = specialHours.map(entry => {
+        const endDate = entry.end_date || entry.date;
         const value = isClosed(entry)
             ? 'Closed'
             : `${formatClockTime(entry.open_time)} – ${formatClockTime(entry.close_time)}`;
         const note = entry.note ? ` <span class="special-hours-note">(${escapeHtml(entry.note)})</span>` : '';
-        return `                                <tr data-date="${entry.date}" data-day="${dayOfWeekSlug(entry.date)}"><td>${formatSpecialDate(entry.date)}</td><td>${value}${note}</td></tr>`;
+        // data-start/data-end (not a single fixed data-day anymore) - a range
+        // can span multiple weekdays, so which regular-hours rows it affects
+        // has to be worked out client-side per calendar day, not baked in
+        // here as one weekday. See the "highlight this week's special hours"
+        // script in index.html.
+        return `                                <tr data-start="${entry.date}" data-end="${endDate}"><td>${formatSpecialDateRange(entry.date, endDate)}</td><td>${value}${note}</td></tr>`;
     }).join('\n');
 
     return `                        <div class="special-hours">
@@ -314,6 +322,35 @@ function buildMenuFilters(categories) {
     return categories
         .map(cat => `                    <button class="menu-filter" data-filter="${slugify(cat.name)}" aria-pressed="false">${escapeHtml(cat.name)}</button>`)
         .join('\n');
+}
+
+/**
+ * The whole "Our Menu" section (heading included), emitted only when there's
+ * anything to show - mirrors buildEventsSection() above, added 2026-09-04 to
+ * close the same gap Events already didn't have: with only the filters/grid
+ * markers previously wrapped (not the section itself), turning a client's
+ * menu off emptied the grid but left the "Our Menu" heading and empty filter
+ * bar showing over nothing. `menu` is already `[]` from the portal API
+ * whenever menu_enabled is off (see merkitech-portal's public/api/admin.php),
+ * so the same "no data -> no section" check Events uses works here for free
+ * - no separate client.menu_enabled check needed.
+ */
+function buildMenuSection(categories) {
+    if (!categories.length) return '';
+    return `                <section class="section" id="menu">
+                    <h2>Our Menu</h2>
+                    <p class="section-intro">A few local favorites — full menu available in-store.</p>
+                    <div class="menu-filters" id="menuFilters">
+                        <button class="menu-filter active" data-filter="all" aria-pressed="true">All</button>
+${buildMenuFilters(categories)}
+                    </div>
+                    <div class="menu-grid" id="menuGrid">
+${buildMenuGrid(categories)}
+                        <!-- Static regardless of portal data - the menu-preview JS overwrites its
+                             label with the real item count on load, see index.html and CLAUDE.md. -->
+                        <button type="button" id="menuShowMore" class="menu-show-more hidden">Show Full Menu</button>
+                    </div>
+                </section>`;
 }
 
 function buildMenuGrid(categories) {
@@ -528,8 +565,7 @@ async function main() {
     html = replaceBetweenMarkers(html, 'SPECIAL-HOURS', buildSpecialHoursSection(specialHours));
     html = replaceBetweenMarkers(html, 'LOCATION-COLUMN', buildLocationColumn(client));
     html = replaceBetweenMarkers(html, 'EVENTS-SECTION', buildEventsSection(events));
-    html = replaceBetweenMarkers(html, 'MENU-FILTERS', buildMenuFilters(menu));
-    html = replaceBetweenMarkers(html, 'MENU-GRID', buildMenuGrid(menu));
+    html = replaceBetweenMarkers(html, 'MENU-SECTION', buildMenuSection(menu));
 
     fs.writeFileSync('index.html', html);
     console.log('index.html regenerated from portal data.');
