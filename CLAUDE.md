@@ -33,8 +33,17 @@ enough to skip the "Show Full Menu" collapse, had zero live test coverage before
 
 ## Identity - "Hale Kai Restaurant (Demo)"
 
-- **Portal client id 8**, tier `portal`, `enabled_features = locations` (no `events` - this demo is
-  deliberately the *other* direction from client 5, which already covers events/per-day locations).
+- **Portal client id 8**, tier `portal`, `enabled_features = locations,languages` (no `events` -
+  this demo is deliberately the *other* direction from client 5, which already covers events/
+  per-day locations). **`languages = 'es,ja'`, activated 2026-09-04** (portal migration 026) so
+  this demo also proves out multi-language phase 2 live - `restaurant-demo.merkitech.com/es/` and
+  `/ja/` are real generated pages, not a hypothetical. Activated via a one-time data-seeding
+  migration rather than the portal's own admin UI (no browser session was available in the
+  environment that built this) - see that migration's own comment and
+  `merkitech-portal/CLAUDE.md`'s multi-language sections. **Menu item/category translations
+  haven't been filled in yet** - the chrome (nav, headings, form labels) is fully translated, but
+  menu content still falls back to English on both `/es/` and `/ja/` until someone with portal
+  access fills in `item-edit.php`/`category-edit.php`'s per-language fields (see phase 1).
 - **`location_mode = 'default'`**, with one saved `locations` row ("Hale Kai Restaurant", 456
   Plumeria Lane, Kapolei HI 96707) set as `default_location_id` - picked with a `maps_url` on
   `maps.google.com` (deliberately a different host than the auto-generated
@@ -114,3 +123,11 @@ drift out of sync" note above for why a manual port was needed at all).
   character-for-character. No wording needed adjusting - this demo's chrome text already matched the
   template's defaults exactly. `i18n/es.json` was copied the same way (nothing here depends on this
   demo's own content, it's all generic UI chrome).
+
+**Activated for real on this demo, 2026-09-04** (same day, requested directly): `i18n/ja.json` was
+added (same 25-key set as `en.json`/`es.json`, also copied into `merkitech-essentials-starter` for
+template parity, though not activated for that repo's own client), then portal migration 026 turned
+on the `languages` feature and set `clients.languages = 'es,ja'` for client 8 - see "Identity" above.
+A manually-triggered `workflow_dispatch` run confirmed `es/index.html` and `ja/index.html` generate
+correctly (translated chrome, correct hreflang/canonical/`lang`, working language-switcher links),
+and both are live at `restaurant-demo.merkitech.com/es/` and `/ja/`.
