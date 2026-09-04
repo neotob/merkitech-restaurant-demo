@@ -373,8 +373,17 @@ function buildMenuGrid(categories) {
         }
     }
 
+    // Portal migration 022 (2026-09-04) - empty/absent means every day, same
+    // as before this existed, so no attribute at all is the common case.
+    // "Is today one of these days" can't be resolved here (this script only
+    // runs when someone saves a change, not daily) - see the client-side
+    // script in index.html that actually hides a card on a day it doesn't
+    // apply, and CLAUDE.md for the full reasoning.
     function buildCard(item, slugs) {
-        return `                    <div class="menu-item" data-category="${[...slugs].join(' ')}">
+        const daysAttr = item.available_days && item.available_days.length
+            ? ` data-available-days="${item.available_days.join(',')}"`
+            : '';
+        return `                    <div class="menu-item" data-category="${[...slugs].join(' ')}"${daysAttr}>
                         <span class="price">${formatPrice(item.price)}</span>
                         <h4>${escapeHtml(item.name)}</h4>
                         <p>${escapeHtml(item.description || '')}</p>

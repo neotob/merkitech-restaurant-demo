@@ -339,6 +339,13 @@
             display: none;
         }
 
+        /* A card restricted to specific weekdays (portal migration 022) that
+           doesn't apply today - set once by the JS below and never removed,
+           so a category-filter click can never accidentally reveal it. */
+        .day-unavailable {
+            display: none;
+        }
+
         .menu-show-more {
             grid-column: 1 / -1;
             justify-self: center;
@@ -1150,7 +1157,24 @@
         const menuGrid = document.getElementById('menuGrid');
         const menuFilters = document.getElementById('menuFilters');
         if (menuGrid && menuFilters) {
-        const menuItems = document.querySelectorAll('#menuGrid .menu-item');
+        // Hides a card restricted to specific weekdays (portal migration 022,
+        // 2026-09-04) when today isn't one of them - has to run client-side,
+        // same reasoning as the special-hours "this week" badge below: the
+        // site is static HTML regenerated only on save, so it has no way to
+        // know "is it Friday" days after the last rebuild. Uses its own class
+        // (not .hidden, which the category filter buttons own, or
+        // .menu-preview-hidden, which the "Show Full Menu" button owns) so
+        // neither of those ever accidentally un-hides a day-restricted card -
+        // nothing removes .day-unavailable once added, ever.
+        var DOW_SLUGS_MENU = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        var todaySlug = DOW_SLUGS_MENU[new Date().getDay()];
+        menuGrid.querySelectorAll('.menu-item[data-available-days]').forEach(function (item) {
+            if (item.dataset.availableDays.split(',').indexOf(todaySlug) === -1) {
+                item.classList.add('day-unavailable');
+            }
+        });
+
+        const menuItems = document.querySelectorAll('#menuGrid .menu-item:not(.day-unavailable)');
         const menuHeadings = document.querySelectorAll('#menuGrid .menu-category-heading');
         const menuShowMoreBtn = document.getElementById('menuShowMore');
 
@@ -1174,7 +1198,7 @@
                 if (el.classList.contains('menu-category-heading')) {
                     current = { heading: el, items: [] };
                     segments.push(current);
-                } else if (el.classList.contains('menu-item')) {
+                } else if (el.classList.contains('menu-item') && !el.classList.contains('day-unavailable')) {
                     if (!current) {
                         current = { heading: null, items: [] };
                         segments.push(current);
