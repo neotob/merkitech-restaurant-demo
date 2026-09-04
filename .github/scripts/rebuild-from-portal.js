@@ -1,7 +1,13 @@
 // Fetches this client's hours/menu from the Merki Tech portal and regenerates
 // the corresponding sections of index.html in place - the JSON-LD
 // openingHoursSpecification, the visible hours table, and the menu filter
-// pills + grid. See CLAUDE.md for the full design and why this exists.
+// pills + grid. Also generates one additional index.html per extra language
+// configured on the portal (clients.languages), under its own /{locale}/
+// subfolder - see the "Multi-language" section in CLAUDE.md for the full
+// design (why chrome text uses [data-i18n] + i18n/*.json but menu/category
+// translations come from the portal API, why the primary/root file is never
+// touched by any of that, and what's still NOT translated by this - bespoke
+// hero/about copy, event names/descriptions, JSON-LD).
 //
 // Run via `node .github/scripts/rebuild-from-portal.js` from the repo root,
 // with PORTAL_URL, PORTAL_API_TOKEN, and PORTAL_CLIENT_ID set in the
@@ -20,7 +26,15 @@ const PORTAL_CLIENT_ID = requireEnv('PORTAL_CLIENT_ID');
 const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 
 const DAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+// English day names for JSON-LD only (schema.org's dayOfWeek is structured
+// metadata, not display text - it stays the canonical English form
+// regardless of which language a given generated page is in). For the
+// *visible* hours table, see dayLabel() below instead, which is locale-aware.
 const DAY_LABELS = { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' };
+// Arbitrary real Mon-Sun week (2024-01-01 was a Monday), used only to ask
+// Intl for "what is this weekday called in this locale" - never displayed
+// as a date itself.
+const DAY_REFERENCE_ISO = { mon: '2024-01-01', tue: '2024-01-02', wed: '2024-01-03', thu: '2024-01-04', fri: '2024-01-05', sat: '2024-01-06', sun: '2024-01-07' };
 
 function requireEnv(name) {
     const value = process.env[name];
@@ -82,13 +96,24 @@ function isClosed(dayRow) {
     return dayRow.is_closed === 1 || dayRow.is_closed === '1' || dayRow.is_closed === true;
 }
 
-// yyyy-mm-dd -> "Nov 28" - parsed as UTC and formatted in UTC so a date string
-// from the portal's DATE column never shifts a day under the runner's local
-// timezone (a plain `new Date('2026-11-28')` is UTC midnight; formatting it
-// with the *local* zone can print the day before west of UTC).
-function formatSpecialDate(isoDate) {
+// A weekday's display name in a given Intl locale tag ("en-US", "es", ...) -
+// capitalized regardless of the locale's own grammatical convention (some,
+// like Spanish, lowercase weekday names in running text), matching how this
+// table has always shown them. Used for the *visible* hours table only - see
+// DAY_LABELS above for JSON-LD's separate, always-English need.
+function dayLabel(day, intlLocale) {
+    const label = new Date(`${DAY_REFERENCE_ISO[day]}T00:00:00Z`).toLocaleDateString(intlLocale, { weekday: 'long', timeZone: 'UTC' });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+// yyyy-mm-dd -> "Nov 28" (locale-formatted month) - parsed as UTC and
+// formatted in UTC so a date string from the portal's DATE column never
+// shifts a day under the runner's local timezone (a plain `new
+// Date('2026-11-28')` is UTC midnight; formatting it with the *local* zone
+// can print the day before west of UTC).
+function formatSpecialDate(isoDate, intlLocale) {
     const [y, m, d] = isoDate.split('-').map(Number);
-    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', {
+    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(intlLocale, {
         month: 'short', day: 'numeric', timeZone: 'UTC',
     });
 }
@@ -98,9 +123,9 @@ function formatSpecialDate(isoDate) {
 // months spelled out rather than trying to compress a same-month range, to
 // keep this simple and avoid a second, subtly-different date format on the
 // same page.
-function formatSpecialDateRange(startIso, endIso) {
-    if (startIso === endIso) return formatSpecialDate(startIso);
-    return `${formatSpecialDate(startIso)} – ${formatSpecialDate(endIso)}`;
+function formatSpecialDateRange(startIso, endIso, intlLocale) {
+    if (startIso === endIso) return formatSpecialDate(startIso, intlLocale);
+    return `${formatSpecialDate(startIso, intlLocale)} – ${formatSpecialDate(endIso, intlLocale)}`;
 }
 
 function isAvailable(item) {
@@ -119,6 +144,117 @@ function formatClockTime(hhmmss) {
 // fallback wherever there's no exact pinned link yet.
 function mapsSearchUrl(query) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+// --- Multi-language support (added 2026-09-04) -----------------------------
+//
+// Two independent translation sources, deliberately not unified:
+//  - Static template "chrome" (nav labels, section headings, button/form
+//    text) comes from i18n/{locale}.json, looked up by the [data-i18n="key"]
+//    attribute already sitting on the relevant elements in index.html - see
+//    applyChromeStrings(). English values live in i18n/en.json and *are*
+//    what's already hardcoded in index.html; a translated locale's file
+//    falls back to them for any key its own JSON is missing.
+//  - Portal-managed content (menu item/category names+descriptions) comes
+//    from the portal API's own `translations` field on each entity - see
+//    localizedField().
+// Neither covers: hero/about bespoke prose, meta title/description/OG tags,
+// or event names/descriptions/JSON-LD - these stay whatever language they
+// were entered in on every generated version. See CLAUDE.md.
+
+function loadStrings(locale) {
+    const en = JSON.parse(fs.readFileSync('i18n/en.json', 'utf8'));
+    if (!locale || locale === 'en') return en;
+
+    let localized = {};
+    try {
+        localized = JSON.parse(fs.readFileSync(`i18n/${locale}.json`, 'utf8'));
+    } catch (err) {
+        // No translation file for this locale yet - fall back to English
+        // entirely rather than failing the whole build; a client shouldn't
+        // lose their site over one missing i18n/*.json file.
+        console.warn(`no i18n/${locale}.json found - "${locale}" version will use English chrome text until one's added.`);
+    }
+    return { ...en, ...localized };
+}
+
+// `locale` is the additional-language code this call is for, or null/'en'
+// for the primary/root file - null means "never touch, use the entity's own
+// primary-language field", matching root's zero-risk guarantee everywhere
+// this is called.
+function localizedField(entity, locale, field) {
+    if (!locale || locale === 'en') return entity[field];
+    const translated = entity.translations && entity.translations[locale] && entity.translations[locale][field];
+    return translated || entity[field];
+}
+
+// Swaps the text of every [data-i18n="key"] element for strings[key] - only
+// ever called for a non-primary locale file (see main()), root's own chrome
+// text is never touched by this. Every tagged element in index.html has
+// data-i18n as its last attribute with plain text (no nested tags)
+// immediately following, by construction - see CLAUDE.md - which is what
+// lets one regex handle all of them without a DOM library.
+function applyChromeStrings(html, strings) {
+    return html.replace(/data-i18n="([^"]+)">([^<]*)</g, (match, key) => {
+        return strings[key] !== undefined ? `data-i18n="${key}">${escapeHtml(strings[key])}<` : match;
+    });
+}
+
+function setHtmlLang(html, locale) {
+    return html.replace(/<html lang="[^"]*">/, `<html lang="${locale || 'en'}">`);
+}
+
+function rootCanonicalUrl(rootHtml) {
+    const match = rootHtml.match(/<link rel="canonical" href="([^"]+)">/);
+    return match ? match[1].replace(/\/+$/, '') : null;
+}
+
+// Only ever called for a non-root locale file - root's own canonical tag is
+// hand-edited per client (see README) and never touched here. A translated
+// page needs its *own* self-referencing canonical (not a leftover copy of
+// root's), otherwise it reads as a duplicate of root rather than a real
+// alternate-language version - hreflang tags alone don't fix that.
+function setCanonical(html, url) {
+    return html.replace(/<link rel="canonical" href="[^"]+">/, `<link rel="canonical" href="${escapeHtml(url)}">`);
+}
+
+// One <link rel="alternate" hreflang="..."> per generated version, root
+// included (self-referencing) - the standard way to tell search engines
+// these are translations of each other, not duplicate content. Empty when
+// there's no site_url to build absolute URLs from, or no additional
+// languages configured at all (the common case today).
+//
+// Assumes the primary/root content's language is "en" - there's no
+// clients.primary_language column (nothing tracks this explicitly), but
+// every real client's base content is realistically English; revisit if
+// that's ever not true for a real client rather than building it
+// speculatively now.
+function buildHreflangTags(client, additionalLanguages) {
+    if (!client.site_url || !additionalLanguages.length) return '';
+
+    const base = client.site_url.replace(/\/+$/, '');
+    const allLocales = ['en', ...additionalLanguages];
+    return allLocales
+        .map(loc => `    <link rel="alternate" hreflang="${loc}" href="${base}/${loc === 'en' ? '' : loc + '/'}">`)
+        .join('\n');
+}
+
+// A single direct link to "the other" language when there are exactly two
+// (the overwhelmingly common case - one client, one extra language) reads
+// simpler than a dropdown/list of one item; only a real list once a client
+// configures three or more, which isn't expected to be common. Visible label
+// is just the uppercased locale code (ES, EN, JA, ...) - avoids needing a
+// "language name in its own language" dictionary for something this small.
+function buildLanguageSwitcher(currentLocale, additionalLanguages) {
+    const allLocales = ['en', ...additionalLanguages];
+    if (allLocales.length < 2) return '';
+
+    const current = currentLocale || 'en';
+    const others = allLocales.filter(loc => loc !== current);
+
+    return others
+        .map(loc => `                <li><a href="${loc === 'en' ? '/' : '/' + loc + '/'}" class="lang-switch">${loc.toUpperCase()}</a></li>`)
+        .join('\n');
 }
 
 // A food truck's day-by-day spot - its own 3rd table column (Day | Time |
@@ -144,13 +280,13 @@ function buildLocationLink(row) {
 // columns to actually line up (see index.html's `:has(td:nth-child(3))`
 // CSS, which detects "3-column mode" this way and would misalign a mix of
 // 2- and 3-cell rows).
-function buildHoursTableRows(hours, client) {
+function buildHoursTableRows(hours, client, intlLocale, strings) {
     const showPerDayLocation = isPerDayLocationClient(client);
     return DAY_ORDER.map(day => {
         const row = hours[day];
-        const value = isClosed(row) ? 'Closed' : `${formatClockTime(row.open_time)} – ${formatClockTime(row.close_time)}`;
+        const value = isClosed(row) ? strings['hours.closed'] : `${formatClockTime(row.open_time)} – ${formatClockTime(row.close_time)}`;
         const locationCell = showPerDayLocation ? `<td>${buildLocationLink(row)}</td>` : '';
-        return `                            <tr data-day="${day}"><td>${DAY_LABELS[day]}</td><td>${value}</td>${locationCell}</tr>`;
+        return `                            <tr data-day="${day}"><td>${escapeHtml(dayLabel(day, intlLocale))}</td><td>${escapeHtml(value)}</td>${locationCell}</tr>`;
     }).join('\n');
 }
 
@@ -159,9 +295,11 @@ function buildHoursTableRows(hours, client) {
 // own "Hours & Location" <h2> right above already says it, and with the
 // second grid column also gone (see buildLocationColumn()) repeating
 // "Hours" here read as a redundant middle heading rather than a real
-// subtitle.
-function buildHoursHeading(client) {
-    return isPerDayLocationClient(client) ? '' : '<h3>Hours</h3>';
+// subtitle. This demo has no locations feature (single fixed address) so
+// isPerDayLocationClient() is always false here - the heading always shows -
+// but the check stays shared code with the food-truck demo, not forked.
+function buildHoursHeading(client, strings) {
+    return isPerDayLocationClient(client) ? '' : `<h3>${escapeHtml(strings['hours.subheading'])}</h3>`;
 }
 
 function buildOpeningHoursSpecification(hours) {
@@ -196,13 +334,13 @@ function buildSpecialOpeningHoursSpecification(specialHours) {
     }));
 }
 
-function buildSpecialHoursSection(specialHours) {
+function buildSpecialHoursSection(specialHours, intlLocale, strings) {
     if (!specialHours.length) return '';
 
     const rows = specialHours.map(entry => {
         const endDate = entry.end_date || entry.date;
         const value = isClosed(entry)
-            ? 'Closed'
+            ? strings['hours.closed']
             : `${formatClockTime(entry.open_time)} – ${formatClockTime(entry.close_time)}`;
         const note = entry.note ? ` <span class="special-hours-note">(${escapeHtml(entry.note)})</span>` : '';
         // data-start/data-end (not a single fixed data-day anymore) - a range
@@ -210,11 +348,11 @@ function buildSpecialHoursSection(specialHours) {
         // has to be worked out client-side per calendar day, not baked in
         // here as one weekday. See the "highlight this week's special hours"
         // script in index.html.
-        return `                                <tr data-start="${entry.date}" data-end="${endDate}"><td>${formatSpecialDateRange(entry.date, endDate)}</td><td>${value}${note}</td></tr>`;
+        return `                                <tr data-start="${entry.date}" data-end="${endDate}"><td>${formatSpecialDateRange(entry.date, endDate, intlLocale)}</td><td>${escapeHtml(value)}${note}</td></tr>`;
     }).join('\n');
 
     return `                        <div class="special-hours">
-                            <h4>Upcoming hours changes</h4>
+                            <h4>${escapeHtml(strings['hours.special_heading'])}</h4>
                             <table class="hours-table">
 ${rows}
                             </table>
@@ -234,15 +372,22 @@ function formatEventDay(isoDate) {
     return String(Number(isoDate.split('-')[2]));
 }
 
-function formatEventMonth(isoDate) {
+function formatEventMonth(isoDate, intlLocale) {
     const [y, m] = isoDate.split('-').map(Number);
-    return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+    return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString(intlLocale, { month: 'short', timeZone: 'UTC' });
 }
 
 // Google requires name/startDate/location for Event rich-result eligibility,
 // but an event with no location entered still gets a (non-rich-result-
 // eligible) Event object here rather than being dropped outright - still
-// valid schema.org, and the location can always be filled in later.
+// valid schema.org, and the location can always be filled in later. Not
+// localized - an event's own name/description/location are portal content
+// with no translation table behind them (unlike menu items/categories),
+// same as the visible event card below - see CLAUDE.md. This demo has no
+// "events" feature enabled (see CLAUDE.md), so events is always `[]` and
+// this whole function is inert here, same as the food-truck demo's own
+// isPerDayLocationClient() branch is inert there - kept as shared code
+// rather than forked out.
 function buildEventsJsonLd(events) {
     return events.map(event => {
         const json = {
@@ -273,8 +418,10 @@ function buildEventsJsonLd(events) {
 
 // Only the fields a client actually filled in appear on the card - an event
 // with no location, say, just doesn't get a location line rather than
-// showing one with blank/placeholder text.
-function buildEventCard(event) {
+// showing one with blank/placeholder text. event.name/description/location
+// stay whatever language they were entered in on every generated version -
+// see the class comment on buildEventsJsonLd() above.
+function buildEventCard(event, intlLocale, strings) {
     const timeRange = event.end_time
         ? `${formatClockTime(event.start_time)} – ${formatClockTime(event.end_time)}`
         : formatClockTime(event.start_time);
@@ -291,13 +438,13 @@ function buildEventCard(event) {
         `<p class="event-time">${timeRange}</p>`,
         event.description ? `<p>${escapeHtml(event.description)}</p>` : null,
         locationLine,
-        event.link_url ? `<a class="event-link" href="${escapeHtml(event.link_url)}" target="_blank" rel="noopener">More info</a>` : null,
+        event.link_url ? `<a class="event-link" href="${escapeHtml(event.link_url)}" target="_blank" rel="noopener">${escapeHtml(strings['events.more_info'])}</a>` : null,
     ].filter(Boolean).join('\n                            ');
 
     return `                    <div class="event-card">
                         <div class="event-date-badge">
                             <span class="day">${formatEventDay(event.event_date)}</span>
-                            <span class="month">${formatEventMonth(event.event_date)}</span>
+                            <span class="month">${escapeHtml(formatEventMonth(event.event_date, intlLocale))}</span>
                         </div>
                         <div class="event-details">
                             <h3>${escapeHtml(event.name)}</h3>
@@ -306,21 +453,21 @@ function buildEventCard(event) {
                     </div>`;
 }
 
-function buildEventsSection(events) {
+function buildEventsSection(events, intlLocale, strings) {
     if (!events.length) return '';
     return `                <section class="section" id="events">
                     <div class="container">
-                        <h2>Upcoming Events</h2>
+                        <h2>${escapeHtml(strings['events.heading'])}</h2>
                         <div class="events-list">
-${events.map(buildEventCard).join('\n')}
+${events.map(e => buildEventCard(e, intlLocale, strings)).join('\n')}
                         </div>
                     </div>
                 </section>`;
 }
 
-function buildMenuFilters(categories) {
+function buildMenuFilters(categories, locale) {
     return categories
-        .map(cat => `                    <button class="menu-filter" data-filter="${slugify(cat.name)}" aria-pressed="false">${escapeHtml(cat.name)}</button>`)
+        .map(cat => `                    <button class="menu-filter" data-filter="${slugify(cat.name)}" aria-pressed="false">${escapeHtml(localizedField(cat, locale, 'name'))}</button>`)
         .join('\n');
 }
 
@@ -335,25 +482,26 @@ function buildMenuFilters(categories) {
  * so the same "no data -> no section" check Events uses works here for free
  * - no separate client.menu_enabled check needed.
  */
-function buildMenuSection(categories) {
+function buildMenuSection(categories, locale, strings) {
     if (!categories.length) return '';
     return `                <section class="section" id="menu">
-                    <h2>Our Menu</h2>
-                    <p class="section-intro">A few local favorites — full menu available in-store.</p>
+                    <h2>${escapeHtml(strings['menu.heading'])}</h2>
+                    <p class="section-intro">${escapeHtml(strings['menu.intro'])}</p>
                     <div class="menu-filters" id="menuFilters">
-                        <button class="menu-filter active" data-filter="all" aria-pressed="true">All</button>
-${buildMenuFilters(categories)}
+                        <button class="menu-filter active" data-filter="all" aria-pressed="true">${escapeHtml(strings['menu.filter_all'])}</button>
+${buildMenuFilters(categories, locale)}
                     </div>
                     <div class="menu-grid" id="menuGrid">
-${buildMenuGrid(categories)}
+${buildMenuGrid(categories, locale)}
                         <!-- Static regardless of portal data - the menu-preview JS overwrites its
-                             label with the real item count on load, see index.html and CLAUDE.md. -->
-                        <button type="button" id="menuShowMore" class="menu-show-more hidden">Show Full Menu</button>
+                             label with the real item count on load (in English always - see
+                             CLAUDE.md's multi-language section for this known limitation). -->
+                        <button type="button" id="menuShowMore" class="menu-show-more hidden">${escapeHtml(strings['menu.show_full'])}</button>
                     </div>
                 </section>`;
 }
 
-function buildMenuGrid(categories) {
+function buildMenuGrid(categories, locale) {
     // An item can belong to more than one portal category (e.g. "Bestsellers"
     // and "Mains"), so it's nested under each of those categories' .items in
     // the API response - de-duplicate by id into one card per item (not one
@@ -387,13 +535,15 @@ function buildMenuGrid(categories) {
         // PhotoUploader.php/R2Client.php) - omitted entirely when no photo
         // has been uploaded yet, so a client who never adds photos gets the
         // exact same plain text card as before this existed.
+        const name = localizedField(item, locale, 'name');
+        const description = localizedField(item, locale, 'description');
         const photoHtml = item.photo_url
-            ? `<img class="menu-item-photo" src="${escapeHtml(item.photo_url)}" alt="${escapeHtml(item.name)}" loading="lazy">`
+            ? `<img class="menu-item-photo" src="${escapeHtml(item.photo_url)}" alt="${escapeHtml(name)}" loading="lazy">`
             : '';
         return `                    <div class="menu-item" data-category="${[...slugs].join(' ')}"${daysAttr}>
                         ${photoHtml}<span class="price">${formatPrice(item.price)}</span>
-                        <h4>${escapeHtml(item.name)}</h4>
-                        <p>${escapeHtml(item.description || '')}</p>
+                        <h4>${escapeHtml(name)}</h4>
+                        <p>${escapeHtml(description || '')}</p>
                     </div>`;
     }
 
@@ -411,7 +561,7 @@ function buildMenuGrid(categories) {
         const itemsHere = cat.items.filter(item => isAvailable(item) && !placed.has(item.id));
         if (!itemsHere.length) continue;
 
-        blocks.push(`                    <h3 class="menu-category-heading" data-category-heading="${slugify(cat.name)}">${escapeHtml(cat.name)}</h3>`);
+        blocks.push(`                    <h3 class="menu-category-heading" data-category-heading="${slugify(cat.name)}">${escapeHtml(localizedField(cat, locale, 'name'))}</h3>`);
         for (const item of itemsHere) {
             placed.add(item.id);
             blocks.push(buildCard(item, cardsById.get(item.id).slugs));
@@ -530,7 +680,12 @@ function isPerDayLocationClient(client) {
 // the saved Locations list on general.php) and the no-"locations"-feature
 // plain address/phone fallback. Only the fields actually filled in appear,
 // same "no empty placeholder line" rule as everywhere else in this script.
-function buildLocationBlock(client) {
+// A saved location's own name/address (client data) stays untranslated,
+// same as everywhere else client-entered text isn't backed by the
+// translations table - only the "Location" fallback heading is chrome. This
+// demo is exactly the 'default'-mode branch (one saved location, see
+// CLAUDE.md), so that's the path real data actually takes here.
+function buildLocationBlock(client, strings) {
     const phoneLine = client.phone
         ? `<p style="margin-top: 1rem;"><span aria-hidden="true">📞</span> ${escapeHtml(client.phone)}</p>`
         : '';
@@ -549,7 +704,7 @@ function buildLocationBlock(client) {
     }
 
     const addressLine = client.address ? `<p>${escapeHtml(client.address)}</p>` : '';
-    return `<h3>Location</h3>
+    return `<h3>${escapeHtml(strings['location.heading'])}</h3>
                         ${addressLine}
                         ${phoneLine}`;
 }
@@ -562,15 +717,62 @@ function buildLocationBlock(client) {
 // generic "Find Us" panel here read as redundant once sitting right next to
 // a real per-day schedule. The hours column on its own then simply fills
 // the row - a CSS grid with only one child does this automatically (see
-// .info-grid in index.html), no layout class needed here.
-function buildLocationColumn(client) {
+// .info-grid in index.html), no layout class needed here. This demo is
+// always in 'default' mode (see CLAUDE.md), so isPerDayLocationClient() is
+// always false here and this column always renders - the per-day branch is
+// inert, kept as shared code with the food-truck demo rather than forked.
+function buildLocationColumn(client, strings) {
     if (isPerDayLocationClient(client)) {
         return '';
     }
 
     return `                    <div>
-                        ${buildLocationBlock(client)}
+                        ${buildLocationBlock(client, strings)}
                     </div>`;
+}
+
+// Regenerates one file (root index.html, or one additional locale's own
+// {locale}/index.html) in place. `locale` is null for the primary/root file
+// - every function above that takes it treats null as "don't translate,
+// this is the primary content", so calling this with locale=null for root
+// reproduces exactly what this script always did before multi-language
+// existed, byte-for-byte.
+function buildLocaleFile(path, locale, data) {
+    const { client, hours, specialHours, events, menu, additionalLanguages } = data;
+    const intlLocale = locale || 'en-US'; // matches this script's pre-existing hardcoded default
+    const strings = loadStrings(locale);
+
+    let html = fs.readFileSync(path, 'utf8');
+    html = updateJsonLd(html, hours, specialHours, client);
+    html = updateEventsJsonLd(html, events);
+    const aboutPhoto = buildAboutPhoto(client);
+    if (aboutPhoto !== null) {
+        html = replaceBetweenMarkers(html, 'ABOUT-PHOTO', aboutPhoto);
+    }
+    html = replaceBetweenMarkers(html, 'HOURS-HEADING', buildHoursHeading(client, strings));
+    html = replaceBetweenMarkers(html, 'HOURS-TABLE', buildHoursTableRows(hours, client, intlLocale, strings));
+    html = replaceBetweenMarkers(html, 'SPECIAL-HOURS', buildSpecialHoursSection(specialHours, intlLocale, strings));
+    html = replaceBetweenMarkers(html, 'LOCATION-COLUMN', buildLocationColumn(client, strings));
+    html = replaceBetweenMarkers(html, 'EVENTS-SECTION', buildEventsSection(events, intlLocale, strings));
+    html = replaceBetweenMarkers(html, 'MENU-SECTION', buildMenuSection(menu, locale, strings));
+    html = replaceBetweenMarkers(html, 'HREFLANG', buildHreflangTags(client, additionalLanguages));
+    html = replaceBetweenMarkers(html, 'LANG-SWITCHER', buildLanguageSwitcher(locale, additionalLanguages));
+    html = setHtmlLang(html, locale);
+
+    // Chrome text and the self-referencing canonical URL are the only two
+    // things that differ for a translated file vs. root beyond the markers
+    // above - both skipped entirely for root (locale === null), which is
+    // what keeps root byte-for-byte identical to this script's pre-
+    // multi-language behavior.
+    if (locale) {
+        const rootUrl = rootCanonicalUrl(fs.readFileSync('index.html', 'utf8'));
+        if (rootUrl) {
+            html = setCanonical(html, `${rootUrl}/${locale}/`);
+        }
+        html = applyChromeStrings(html, strings);
+    }
+
+    fs.writeFileSync(path, html);
 }
 
 async function main() {
@@ -585,22 +787,38 @@ async function main() {
     const events = await fetchPortal('events');
     const menu = await fetchPortal('menu');
 
-    let html = fs.readFileSync('index.html', 'utf8');
-    html = updateJsonLd(html, hours, specialHours, client);
-    html = updateEventsJsonLd(html, events);
-    const aboutPhoto = buildAboutPhoto(client);
-    if (aboutPhoto !== null) {
-        html = replaceBetweenMarkers(html, 'ABOUT-PHOTO', aboutPhoto);
-    }
-    html = replaceBetweenMarkers(html, 'HOURS-HEADING', buildHoursHeading(client));
-    html = replaceBetweenMarkers(html, 'HOURS-TABLE', buildHoursTableRows(hours, client));
-    html = replaceBetweenMarkers(html, 'SPECIAL-HOURS', buildSpecialHoursSection(specialHours));
-    html = replaceBetweenMarkers(html, 'LOCATION-COLUMN', buildLocationColumn(client));
-    html = replaceBetweenMarkers(html, 'EVENTS-SECTION', buildEventsSection(events));
-    html = replaceBetweenMarkers(html, 'MENU-SECTION', buildMenuSection(menu));
+    const additionalLanguages = Array.isArray(client.languages) ? client.languages : [];
+    const data = { client, hours, specialHours, events, menu, additionalLanguages };
 
-    fs.writeFileSync('index.html', html);
-    console.log('index.html regenerated from portal data.');
+    // Root always regenerates first - a new additional language's file is
+    // bootstrapped by cloning root's *current* content (see below), so root
+    // must already be up to date before that copy happens.
+    buildLocaleFile('index.html', null, data);
+
+    for (const locale of additionalLanguages) {
+        if (!fs.existsSync(locale)) {
+            fs.mkdirSync(locale);
+        }
+        const localePath = `${locale}/index.html`;
+        if (!fs.existsSync(localePath)) {
+            // First time this language is configured for this client - clone
+            // root's current file as a starting point. This preserves
+            // whatever hand-authored hero/about/meta copy exists (in
+            // English, untranslated) rather than leaving it blank; a human
+            // can hand-translate that specific prose afterward directly in
+            // this file, and it'll survive every future rebuild exactly like
+            // root's own hand-authored content does - later runs only ever
+            // touch this file's PORTAL markers and [data-i18n] chrome text,
+            // never re-clone over it. See CLAUDE.md.
+            fs.writeFileSync(localePath, fs.readFileSync('index.html', 'utf8'));
+        }
+        buildLocaleFile(localePath, locale, data);
+    }
+
+    const suffix = additionalLanguages.length
+        ? ` (+ ${additionalLanguages.length} translated version${additionalLanguages.length === 1 ? '' : 's'}: ${additionalLanguages.join(', ')})`
+        : '';
+    console.log(`index.html regenerated from portal data${suffix}.`);
 }
 
 main().catch(err => {

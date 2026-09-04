@@ -66,3 +66,51 @@ enough to skip the "Show Full Menu" collapse, had zero live test coverage before
   `example.com` placeholder**, matching `merkitech-essentials-starter`'s own demo (which never
   updated these either) - neither demo is meant to be indexed for real, so fixing one and not the
   other would just be an inconsistency with no real benefit.
+
+## Multi-language, phase 2 (site build), ported 2026-09-04
+
+`merkitech-essentials-starter/CLAUDE.md`'s own "Multi-language, phase 2" section is the canonical
+source for the full design (why chrome text uses `[data-i18n]` + `i18n/*.json` while menu/category
+translations come from the portal API's own `translations` field, why the primary/root file is
+never touched by any of that, the hreflang/canonical/language-switcher mechanics, and the accepted
+limitations) - not repeated here. This section only covers what's specific to porting it into this
+clone, done the same day the feature landed in the template (see the "Shared logic can silently
+drift out of sync" note above for why a manual port was needed at all).
+
+- **This demo's own `rebuild-from-portal.js` and `index.html` were already byte-for-byte identical
+  to the template's pre-multi-language versions** (confirmed via `cmp` before porting - a single
+  stray comment word aside, see below), so the port was mechanical: the same functions/markers/
+  `[data-i18n]` attributes, copied over rather than redesigned for this demo's shape.
+- **Client 8 (this demo) has no `clients.languages` configured, same as client 5 before it landed
+  there** - this is a complete no-op today, verified the same way: a scratch dry run against
+  synthetic data with `languages: []` produces byte-identical dynamic marker content to the
+  pre-change script, and the real `workflow_dispatch` run after this landed created no `es/`
+  (or any locale) folder.
+- **This demo has no "locations" per-day mode** (`location_mode = 'default'`, see "Identity" above)
+  - `isPerDayLocationClient()` is always `false` here, so the per-day branches in
+  `buildHoursTableRows()`/`buildHoursHeading()`/`buildLocationColumn()` are simply inert code paths
+  that never fire for this client, not something removed or forked out. The `'default'`-mode branch
+  of `buildLocationBlock()` (one saved location, rendered as a clickable heading + address + phone)
+  is the one real data actually takes here - the food-truck demo's per-day branch is what stays
+  untested by *this* repo, same as this repo's own `'default'` branch was untested by the food-truck
+  demo before this demo existed (see "Why a second demo exists" above).
+- **This demo has no `events` feature enabled** (see "Identity" above) - `buildEventsJsonLd()`/
+  `buildEventCard()`/`buildEventsSection()` are equally inert here (the portal always returns `[]`
+  for `events`), and this demo's nav was never given a `#events` link in the first place (the
+  template's own note about that link being hand-added per-demo only applies to client 5). Kept as
+  shared code with the food-truck demo rather than stripped out, same reasoning as the per-day
+  location branches above.
+- **One wording difference from the template's own comment, kept rather than copied verbatim**: the
+  JSDoc above `buildMenuSection()` says "mirrors `buildEventsSection()` **above**" here (correct for
+  this file's actual function order - `buildEventsSection()` is defined earlier in the file), not
+  "below" as the template's own copy of that comment currently reads (a pre-existing, harmless stale
+  cross-reference over there, not something introduced by this port, and not this repo's place to
+  fix).
+- **`i18n/en.json` copied verbatim from the template** - every chrome string it defines (nav labels,
+  skip link, hero CTA, section headings, form labels/submit, footer rights, menu heading/intro/"All"
+  pill/"Show Full Menu" label) was checked word-for-word against this demo's own hand-authored
+  English text before copying, since a hard-coded "About"/"Get In Touch"/etc. anywhere in
+  `index.html` only gets swapped by `applyChromeStrings()` if the JSON's English value matches
+  character-for-character. No wording needed adjusting - this demo's chrome text already matched the
+  template's defaults exactly. `i18n/es.json` was copied the same way (nothing here depends on this
+  demo's own content, it's all generic UI chrome).
