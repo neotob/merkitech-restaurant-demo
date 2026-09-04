@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,7 +12,7 @@
     <meta property="og:title" content="Hale Kai Restaurant | Kapolei, HI">
     <meta property="og:description" content="Sit-down Hawaiian dinner and seafood in Kapolei, HI.">
 
-    <link rel="canonical" href="https://example.com/">
+    <link rel="canonical" href="https://example.com/es/">
     <link rel="icon" type="image/png" href="/favicon.png">
 
     <!-- One <link rel="alternate" hreflang="..."> per generated language version (this one
@@ -896,7 +896,7 @@
     </style>
 </head>
 <body>
-    <a href="#top" class="skip-link" data-i18n="skip_link">Skip to main content</a>
+    <a href="#top" class="skip-link" data-i18n="skip_link">Saltar al contenido principal</a>
     <header id="header">
         <nav>
             <a href="#top" class="logo">Hale Kai Restaurant</a>
@@ -904,16 +904,16 @@
                 <span></span><span></span><span></span>
             </button>
             <ul class="nav-links" id="navLinks">
-                <li><a href="#about" data-i18n="nav.about">About</a></li>
-                <li><a href="#menu" data-i18n="nav.menu">Menu</a></li>
-                <li><a href="#info" data-i18n="nav.hours">Hours &amp; Location</a></li>
-                <li><a href="#contact" data-i18n="nav.contact">Contact</a></li>
+                <li><a href="#about" data-i18n="nav.about">Nosotros</a></li>
+                <li><a href="#menu" data-i18n="nav.menu">Menú</a></li>
+                <li><a href="#info" data-i18n="nav.hours">Horario y Ubicación</a></li>
+                <li><a href="#contact" data-i18n="nav.contact">Contacto</a></li>
                 <!-- Single link to the other language when there are exactly two (the
                      overwhelmingly common case); a short list only if a client ever
                      configures three or more - see buildLanguageSwitcher() in
                      rebuild-from-portal.js. Empty (no <li> at all) with one language. -->
                 <!-- PORTAL:LANG-SWITCHER:START -->
-                <li><a href="/es/" class="lang-switch">ES</a></li>
+                <li><a href="/" class="lang-switch">EN</a></li>
                 <li><a href="/ja/" class="lang-switch">JA</a></li>
 <!-- PORTAL:LANG-SWITCHER:END -->
             </ul>
@@ -925,7 +925,7 @@
             <div class="hero-content">
                 <h1>Sit-Down Hawaiian Dinner, Done Right</h1>
                 <p>Fresh seafood and island-style plates in the heart of Kapolei — reservations welcome, walk-ins always aloha.</p>
-                <a href="#contact" class="cta-button" data-i18n="cta.get_in_touch">Get In Touch</a>
+                <a href="#contact" class="cta-button" data-i18n="cta.get_in_touch">Contáctanos</a>
             </div>
             <svg class="hero-wave" viewBox="0 0 1440 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path fill="currentColor" d="M0,32L60,42.7C120,53,240,75,360,74.7C480,75,600,53,720,42.7C840,32,960,32,1080,37.3C1200,43,1320,53,1380,58.7L1440,64L1440,90L1380,90C1320,90,1200,90,1080,90C960,90,840,90,720,90C600,90,480,90,360,90C240,90,120,90,60,90L0,90Z"></path>
@@ -936,7 +936,7 @@
             <section class="section" id="about">
                 <div class="about-grid">
                     <div class="about-text">
-                        <h2 data-i18n="about.heading">Our Story</h2>
+                        <h2 data-i18n="about.heading">Nuestra Historia</h2>
                         <p>Hale Kai Restaurant opened its doors on a single stretch of Kapolei
                         waterfront and has stayed there ever since — a real address, a real dining
                         room, and a menu built around whatever came off the boat that morning.
@@ -995,10 +995,10 @@
                  menu in that case - see CLAUDE.md). Don't hand-edit - see CLAUDE.md. -->
             <!-- PORTAL:MENU-SECTION:START -->
                 <section class="section" id="menu">
-                    <h2>Our Menu</h2>
-                    <p class="section-intro">A few local favorites — full menu available in-store.</p>
+                    <h2>Nuestro Menú</h2>
+                    <p class="section-intro">Algunos favoritos locales — menú completo disponible en el local.</p>
                     <div class="menu-filters" id="menuFilters">
-                        <button class="menu-filter active" data-filter="all" aria-pressed="true">All</button>
+                        <button class="menu-filter active" data-filter="all" aria-pressed="true">Todo</button>
                     <button class="menu-filter" data-filter="starters" aria-pressed="false">Starters</button>
                     <button class="menu-filter" data-filter="entrees" aria-pressed="false">Entrees</button>
                     <button class="menu-filter" data-filter="desserts" aria-pressed="false">Desserts</button>
@@ -1075,7 +1075,7 @@
                         <!-- Static regardless of portal data - the menu-preview JS overwrites its
                              label with the real item count on load (in English always - see
                              CLAUDE.md's multi-language section for this known limitation). -->
-                        <button type="button" id="menuShowMore" class="menu-show-more hidden">Show Full Menu</button>
+                        <button type="button" id="menuShowMore" class="menu-show-more hidden">Ver Menú Completo</button>
                     </div>
                 </section>
 <!-- PORTAL:MENU-SECTION:END -->
@@ -1083,7 +1083,7 @@
 
         <section class="info-section" id="info">
             <div class="container">
-                <h2 data-i18n="hours.heading">Hours &amp; Location</h2>
+                <h2 data-i18n="hours.heading">Horario y Ubicación</h2>
                 <div class="info-grid">
                     <div>
                         <!-- Emitted only when the second grid column (PORTAL:LOCATION-COLUMN) is
@@ -1091,7 +1091,7 @@
                              the section's own "Hours & Location" heading right above already says
                              it. Don't hand-edit between the PORTAL markers. -->
                         <!-- PORTAL:HOURS-HEADING:START -->
-<h3>Hours</h3>
+<h3>Horario</h3>
 <!-- PORTAL:HOURS-HEADING:END -->
                         <!-- Regenerated by .github/scripts/rebuild-from-portal.js, one row per
                              day (no Mon-Fri-style grouping - simpler and always correct, at the
@@ -1099,13 +1099,13 @@
                              hand-edit between the PORTAL markers - see CLAUDE.md. -->
                         <table class="hours-table" id="regularHoursTable">
                             <!-- PORTAL:HOURS-TABLE:START -->
-                            <tr data-day="mon"><td>Monday</td><td>Closed</td></tr>
-                            <tr data-day="tue"><td>Tuesday</td><td>5:00 PM – 9:00 PM</td></tr>
-                            <tr data-day="wed"><td>Wednesday</td><td>5:00 PM – 9:00 PM</td></tr>
-                            <tr data-day="thu"><td>Thursday</td><td>5:00 PM – 9:00 PM</td></tr>
-                            <tr data-day="fri"><td>Friday</td><td>5:00 PM – 10:00 PM</td></tr>
-                            <tr data-day="sat"><td>Saturday</td><td>5:00 PM – 10:00 PM</td></tr>
-                            <tr data-day="sun"><td>Sunday</td><td>4:00 PM – 8:00 PM</td></tr>
+                            <tr data-day="mon"><td>Lunes</td><td>Cerrado</td></tr>
+                            <tr data-day="tue"><td>Martes</td><td>5:00 PM – 9:00 PM</td></tr>
+                            <tr data-day="wed"><td>Miércoles</td><td>5:00 PM – 9:00 PM</td></tr>
+                            <tr data-day="thu"><td>Jueves</td><td>5:00 PM – 9:00 PM</td></tr>
+                            <tr data-day="fri"><td>Viernes</td><td>5:00 PM – 10:00 PM</td></tr>
+                            <tr data-day="sat"><td>Sábado</td><td>5:00 PM – 10:00 PM</td></tr>
+                            <tr data-day="sun"><td>Domingo</td><td>4:00 PM – 8:00 PM</td></tr>
 <!-- PORTAL:HOURS-TABLE:END -->
                         </table>
                         <!-- Regenerated the same way - the whole block (heading included) is
@@ -1145,26 +1145,26 @@
 
         <section class="contact" id="contact">
             <div class="container">
-                <h2 data-i18n="cta.get_in_touch">Get In Touch</h2>
-                <p data-i18n="contact.intro">Questions, catering requests, or feedback — send us a message.</p>
+                <h2 data-i18n="cta.get_in_touch">Contáctanos</h2>
+                <p data-i18n="contact.intro">Preguntas, pedidos para eventos o comentarios — envíanos un mensaje.</p>
 
                 <form class="contact-form" id="contactForm" action="https://www.merkitech.com/relay/submit.php" method="POST">
                     <!-- Honeypot: real visitors never see or fill this in; bots that fill every field do. -->
                     <input type="text" name="_hp" style="position:absolute; left:-9999px" tabindex="-1" autocomplete="off" aria-hidden="true">
 
                     <div class="form-group">
-                        <label for="name"><span data-i18n="contact.name_label">Name</span> *</label>
+                        <label for="name"><span data-i18n="contact.name_label">Nombre</span> *</label>
                         <input type="text" id="name" name="name" required>
                     </div>
                     <div class="form-group">
-                        <label for="email"><span data-i18n="contact.email_label">Email</span> *</label>
+                        <label for="email"><span data-i18n="contact.email_label">Correo electrónico</span> *</label>
                         <input type="email" id="email" name="email" required>
                     </div>
                     <div class="form-group">
-                        <label for="message"><span data-i18n="contact.message_label">Message</span> *</label>
+                        <label for="message"><span data-i18n="contact.message_label">Mensaje</span> *</label>
                         <textarea id="message" name="message" required></textarea>
                     </div>
-                    <button type="submit" class="form-submit" id="submitBtn" data-i18n="contact.submit">Send Message</button>
+                    <button type="submit" class="form-submit" id="submitBtn" data-i18n="contact.submit">Enviar Mensaje</button>
                     <div id="formMessage" class="form-message" role="status" aria-live="polite"></div>
                 </form>
             </div>
@@ -1172,7 +1172,7 @@
     </main>
 
     <footer>
-        <p>&copy; <span id="copyYear"></span> Hale Kai Restaurant. <span data-i18n="footer.rights">All rights reserved.</span></p>
+        <p>&copy; <span id="copyYear"></span> Hale Kai Restaurant. <span data-i18n="footer.rights">Todos los derechos reservados.</span></p>
     </footer>
 
     <script>
