@@ -389,6 +389,17 @@
             font-weight: 700;
         }
 
+        /* Only present when a client has uploaded a photo for this item
+           (menu_items.photo_url) - omitted entirely otherwise, so a card
+           with no photo looks exactly as it did before this existed. */
+        .menu-item-photo {
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 0.75rem;
+        }
+
         .menu-item h4 {
             margin-bottom: 0.5rem;
         }
@@ -427,10 +438,14 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         }
 
-        .about-photo svg {
+        .about-photo svg, .about-photo img {
             width: 100%;
             height: 100%;
             display: block;
+        }
+
+        .about-photo img {
+            object-fit: cover;
         }
 
         .about-photo-caption {
@@ -911,6 +926,11 @@
                         private event in our dining room.</p>
                     </div>
                     <div>
+                        <!-- Replaced with a real <img class="about-photo"> once the client uploads a
+                             photo on the portal's general.php (clients.photo_url, 2026-09-04) - stays
+                             this placeholder illustration until then. Removing an already-set photo
+                             later doesn't restore this placeholder automatically - see CLAUDE.md. -->
+                        <!-- PORTAL:ABOUT-PHOTO:START -->
                         <div class="about-photo">
                             <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustration of a plate lunch">
                                 <defs>
@@ -937,6 +957,7 @@
                             </svg>
                         </div>
                         <p class="about-photo-caption">Placeholder illustration — swap the <code>.about-photo</code> block for a real photo once one's available.</p>
+<!-- PORTAL:ABOUT-PHOTO:END -->
                     </div>
                 </div>
             </section>

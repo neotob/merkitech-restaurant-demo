@@ -383,8 +383,15 @@ function buildMenuGrid(categories) {
         const daysAttr = item.available_days && item.available_days.length
             ? ` data-available-days="${item.available_days.join(',')}"`
             : '';
+        // Portal migration (2026-09-04, menu_items.photo_url - see
+        // PhotoUploader.php/R2Client.php) - omitted entirely when no photo
+        // has been uploaded yet, so a client who never adds photos gets the
+        // exact same plain text card as before this existed.
+        const photoHtml = item.photo_url
+            ? `<img class="menu-item-photo" src="${escapeHtml(item.photo_url)}" alt="${escapeHtml(item.name)}" loading="lazy">`
+            : '';
         return `                    <div class="menu-item" data-category="${[...slugs].join(' ')}"${daysAttr}>
-                        <span class="price">${formatPrice(item.price)}</span>
+                        ${photoHtml}<span class="price">${formatPrice(item.price)}</span>
                         <h4>${escapeHtml(item.name)}</h4>
                         <p>${escapeHtml(item.description || '')}</p>
                     </div>`;
@@ -422,6 +429,18 @@ function replaceBetweenMarkers(html, marker, newContent) {
         throw new Error(`PORTAL:${marker} markers not found in index.html`);
     }
     return html.slice(0, startIdx + start.length) + '\n' + newContent + '\n' + html.slice(endIdx);
+}
+
+// Only ever replaces the placeholder illustration with a real photo once
+// the client has uploaded one (clients.photo_url, general.php) - returns
+// null (meaning "leave whatever's there alone") otherwise, so a client who
+// never uploads a photo keeps the original placeholder. See the
+// PORTAL:ABOUT-PHOTO comment in index.html for the one accepted limitation
+// this creates: removing an already-set photo later doesn't bring the
+// placeholder back, since this only ever moves one direction.
+function buildAboutPhoto(client) {
+    if (!client.photo_url) return null;
+    return `<div class="about-photo"><img src="${escapeHtml(client.photo_url)}" alt="${escapeHtml(client.business_name)}"></div>`;
 }
 
 function updateJsonLd(html, hours, specialHours, client) {
@@ -569,6 +588,10 @@ async function main() {
     let html = fs.readFileSync('index.html', 'utf8');
     html = updateJsonLd(html, hours, specialHours, client);
     html = updateEventsJsonLd(html, events);
+    const aboutPhoto = buildAboutPhoto(client);
+    if (aboutPhoto !== null) {
+        html = replaceBetweenMarkers(html, 'ABOUT-PHOTO', aboutPhoto);
+    }
     html = replaceBetweenMarkers(html, 'HOURS-HEADING', buildHoursHeading(client));
     html = replaceBetweenMarkers(html, 'HOURS-TABLE', buildHoursTableRows(hours, client));
     html = replaceBetweenMarkers(html, 'SPECIAL-HOURS', buildSpecialHoursSection(specialHours));
