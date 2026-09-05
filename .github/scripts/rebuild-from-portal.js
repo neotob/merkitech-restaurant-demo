@@ -755,6 +755,88 @@ function buildLocationColumn(client, strings) {
 // this is the primary content", so calling this with locale=null for root
 // reproduces exactly what this script always did before multi-language
 // existed, byte-for-byte.
+function extractTag(html, openTag, closeTag, fromIndex = 0) {
+    const s = html.indexOf(openTag, fromIndex);
+    const e = html.indexOf(closeTag, s);
+    if (s === -1 || e === -1) {
+        throw new Error(`${openTag} / ${closeTag} not found in index.html`);
+    }
+    return html.slice(s, e + closeTag.length);
+}
+
+function replaceTag(html, openTag, closeTag, newBlock, fromIndex = 0) {
+    const s = html.indexOf(openTag, fromIndex);
+    const e = html.indexOf(closeTag, s);
+    if (s === -1 || e === -1) {
+        throw new Error(`${openTag} / ${closeTag} not found in index.html`);
+    }
+    return html.slice(0, s) + newBlock + html.slice(e + closeTag.length);
+}
+
+// The literal first line of the shared behavior <script> - present since
+// before multi-language existed. Used purely as a search anchor (find this
+// text, then walk backward/forward to its enclosing <script>/</script>) so
+// the whole block can be located and replaced by structure alone, with no
+// dependency on a marker comment that a locale file bootstrapped before
+// this existed would never have. There's only one <style> block in this
+// document at all, so that one needs no equivalent anchor.
+const BEHAVIOR_SCRIPT_FINGERPRINT = "document.getElementById('copyYear')";
+
+/**
+ * Keeps a translated locale file's shared design/behavior - the whole
+ * <style> block and the whole inline behavior <script> block - identical to
+ * root's CURRENT version, on *every* rebuild, not just when the locale file
+ * is first bootstrapped.
+ *
+ * Without this, a later CSS/JS improvement to the template only ever
+ * reaches root; every already-generated locale file stays frozen with
+ * whatever style/script existed the moment it was first cloned, silently
+ * drifting out of sync forever after - exactly what happened to the
+ * language-switcher redesign (2026-09-05): its new pill/dropdown markup
+ * reached every locale file fine (PORTAL:LANG-SWITCHER is always
+ * rewritten), but the CSS that styles it and the JS that makes it clickable
+ * did not, since both live outside any marker and the locale files
+ * predated this fix. Caught live on `restaurant-demo.merkitech.com/es/` -
+ * the dropdown was there in the HTML but inert, unstyled and unresponsive
+ * to clicks.
+ *
+ * Deliberately anchored on the tags/a content fingerprint rather than a new
+ * marker comment - a marker would not exist yet in a locale file
+ * bootstrapped before this fix landed, which is exactly the file this most
+ * needs to correctly patch, with no separate migration step.
+ *
+ * Deliberately different from how hero/about/meta prose is treated
+ * (preserved untouched once bootstrapped, see main()) - CSS/JS is shared
+ * design and behavior, not bespoke per-language content, so there is no
+ * legitimate reason for it to ever differ between a site's language
+ * versions the way hero copy legitimately might.
+ */
+function syncTemplateInfrastructure(html, rootHtml) {
+    html = replaceTag(html, '<style>', '</style>', extractTag(rootHtml, '<style>', '</style>'));
+
+    const fingerprintIdx = rootHtml.indexOf(BEHAVIOR_SCRIPT_FINGERPRINT);
+    if (fingerprintIdx === -1) {
+        throw new Error('behavior <script> fingerprint not found in index.html');
+    }
+    const scriptOpenIdx = rootHtml.lastIndexOf('<script>', fingerprintIdx);
+    if (scriptOpenIdx === -1) {
+        throw new Error('behavior <script> open tag not found in index.html');
+    }
+    const rootScript = extractTag(rootHtml, '<script>', '</script>', scriptOpenIdx);
+
+    const targetFingerprintIdx = html.indexOf(BEHAVIOR_SCRIPT_FINGERPRINT);
+    if (targetFingerprintIdx === -1) {
+        throw new Error('behavior <script> fingerprint not found in locale file');
+    }
+    const targetScriptOpenIdx = html.lastIndexOf('<script>', targetFingerprintIdx);
+    if (targetScriptOpenIdx === -1) {
+        throw new Error('behavior <script> open tag not found in locale file');
+    }
+    html = replaceTag(html, '<script>', '</script>', rootScript, targetScriptOpenIdx);
+
+    return html;
+}
+
 function buildLocaleFile(path, locale, data) {
     const { client, hours, specialHours, events, menu, additionalLanguages } = data;
     const intlLocale = locale || 'en-US'; // matches this script's pre-existing hardcoded default
@@ -777,13 +859,13 @@ function buildLocaleFile(path, locale, data) {
     html = replaceBetweenMarkers(html, 'LANG-SWITCHER', buildLanguageSwitcher(locale, additionalLanguages));
     html = setHtmlLang(html, locale);
 
-    // Chrome text and the self-referencing canonical URL are the only two
-    // things that differ for a translated file vs. root beyond the markers
-    // above - both skipped entirely for root (locale === null), which is
-    // what keeps root byte-for-byte identical to this script's pre-
-    // multi-language behavior.
+    // Everything below differs for a translated file vs. root, so all of it
+    // is skipped entirely for root (locale === null) - what keeps root
+    // byte-for-byte identical to this script's pre-multi-language behavior.
     if (locale) {
-        const rootUrl = rootCanonicalUrl(fs.readFileSync('index.html', 'utf8'));
+        const rootHtml = fs.readFileSync('index.html', 'utf8');
+        html = syncTemplateInfrastructure(html, rootHtml);
+        const rootUrl = rootCanonicalUrl(rootHtml);
         if (rootUrl) {
             html = setCanonical(html, `${rootUrl}/${locale}/`);
         }

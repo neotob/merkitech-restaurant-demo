@@ -139,3 +139,13 @@ categories and 13 items are genuinely translated into both languages, not just c
 see `merkitech-essentials-starter/CLAUDE.md`'s own "Language switcher" note (under "Multi-language,
 phase 2") for the full design; ported here the same mechanical way as the rest of phase 2, no
 adaptation needed.
+
+**A real bug in that redesign was caught live on this demo, same day**: `/es/` showed the new
+markup with no styling and no click behavior - `es/index.html`/`ja/index.html` were bootstrapped
+before this CSS/JS existed, and the original design only ever re-synced `PORTAL:*` markers on an
+already-existing locale file, never the `<style>`/`<script>` blocks outside them. Fixed by
+`syncTemplateInfrastructure()`, ported from the template the same mechanical way - see that repo's
+CLAUDE.md for the full design (anchored on the tags/a content fingerprint, not a marker, so it
+correctly patches a file that predates the fix with no separate migration step). This demo's own
+`/es/`/`/ja/` were the real files that needed - and got - that patch, not just a template repo
+someone might clone from later.
