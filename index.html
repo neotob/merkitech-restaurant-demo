@@ -977,8 +977,13 @@
                      configures three or more - see buildLanguageSwitcher() in
                      rebuild-from-portal.js. Empty (no <li> at all) with one language. -->
                 <!-- PORTAL:LANG-SWITCHER:START -->
-                <li><a href="/es/" class="lang-switch">ES</a></li>
-                <li><a href="/ja/" class="lang-switch">JA</a></li>
+                <li class="lang-switcher">
+                    <button type="button" class="lang-switch-pill" aria-expanded="false" aria-haspopup="true">EN</button>
+                    <ul class="lang-switch-dropdown" hidden>
+                        <li><a href="/es/">ES</a></li>
+                        <li><a href="/ja/">JA</a></li>
+                    </ul>
+                </li>
 <!-- PORTAL:LANG-SWITCHER:END -->
             </ul>
         </nav>
