@@ -40,10 +40,9 @@ enough to skip the "Show Full Menu" collapse, had zero live test coverage before
   `/ja/` are real generated pages, not a hypothetical. Activated via a one-time data-seeding
   migration rather than the portal's own admin UI (no browser session was available in the
   environment that built this) - see that migration's own comment and
-  `merkitech-portal/CLAUDE.md`'s multi-language sections. **Menu item/category translations
-  haven't been filled in yet** - the chrome (nav, headings, form labels) is fully translated, but
-  menu content still falls back to English on both `/es/` and `/ja/` until someone with portal
-  access fills in `item-edit.php`/`category-edit.php`'s per-language fields (see phase 1).
+  `merkitech-portal/CLAUDE.md`'s multi-language sections. Menu item/category translations were
+  filled in the same day (see "Activated for real on this demo" below) - stale note removed
+  2026-09-05, this used to say they hadn't been yet.
 - **`location_mode = 'default'`**, with one saved `locations` row ("Hale Kai Restaurant", 456
   Plumeria Lane, Kapolei HI 96707) set as `default_location_id` - picked with a `maps_url` on
   `maps.google.com` (deliberately a different host than the auto-generated
@@ -156,3 +155,16 @@ someone might clone from later.
 has the `events` feature disabled (see "Identity" above), so the function is a complete no-op here
 in practice, same as `buildEventsJsonLd()`/`buildEventsSection()` already were - kept as shared code
 with the food-truck demo rather than forked out.
+
+**Bespoke hero/About/meta copy in `es/index.html` and `ja/index.html` manually translated
+2026-09-05** - caught live (`/es/` still showing the hero `<h1>`/tagline and both About paragraphs
+in plain English), confirming this really is the accepted "bespoke prose, cloned once at bootstrap,
+never auto-translated" gap `merkitech-essentials-starter/CLAUDE.md`'s "Known limitations" note
+already documents, not a functionality bug - the mechanism already fully supports arbitrary
+per-locale text, this content specifically just hadn't been written yet. Translated by hand directly
+in each locale file (title/meta description/og:description, hero `<h1>`/tagline, both About
+paragraphs, and the about-photo placeholder's caption text - a real, visible `<p>`, not a code
+comment, easy to mistake for one). Business name/street address left untranslated on purpose (a
+proper noun and a real US mailing address, same reasoning `merkitech-portal/CLAUDE.md` already gives
+for why saved-location names/addresses go untranslated generally). Confirmed with a script-driven
+sweep of both locale files afterward that nothing else matching this pattern remained.
