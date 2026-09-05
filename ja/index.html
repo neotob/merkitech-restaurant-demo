@@ -181,6 +181,70 @@
             opacity: 0.8;
         }
 
+        /* Deliberately distinct from the plain nav links above it - a pill,
+           not a text link, so it doesn't read as "just another section
+           link". Shared by both shapes buildLanguageSwitcher() can emit:
+           a lone <a> (exactly two languages total) or a <button> that
+           toggles .lang-switch-dropdown open (three or more). */
+        .lang-switch-pill {
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            color: white;
+            border-radius: 20px;
+            padding: 0.3rem 0.85rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            font-family: inherit;
+            text-decoration: none;
+            display: inline-block;
+            cursor: pointer;
+            appearance: none;
+            transition: background 0.2s;
+        }
+
+        .lang-switch-pill:hover {
+            background: rgba(255, 255, 255, 0.32);
+        }
+
+        .lang-switcher {
+            position: relative;
+        }
+
+        .lang-switch-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+            list-style: none;
+            padding: 0.4rem;
+            min-width: 70px;
+            z-index: 1100;
+        }
+
+        .lang-switch-dropdown[hidden] {
+            display: none;
+        }
+
+        .lang-switch-dropdown li a {
+            display: block;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            color: var(--dark);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        .lang-switch-dropdown li a:hover {
+            background: var(--bg-alt);
+            color: var(--primary-solid);
+        }
+
         .burger {
             display: none;
             flex-direction: column;
@@ -1193,6 +1257,24 @@
             link.addEventListener('click', () => {
                 navLinks.classList.remove('active');
                 burger.setAttribute('aria-expanded', 'false');
+            });
+        });
+
+        // Only present with 3+ total languages (buildLanguageSwitcher() emits
+        // a lone <a>, no dropdown at all, for the 2-language case) - a plain
+        // querySelectorAll on zero elements safely no-ops otherwise.
+        document.querySelectorAll('.lang-switcher').forEach(switcher => {
+            const toggle = switcher.querySelector('.lang-switch-pill');
+            const dropdown = switcher.querySelector('.lang-switch-dropdown');
+            toggle.addEventListener('click', e => {
+                e.stopPropagation();
+                const isOpen = !dropdown.hidden;
+                dropdown.hidden = isOpen;
+                toggle.setAttribute('aria-expanded', String(!isOpen));
+            });
+            document.addEventListener('click', () => {
+                dropdown.hidden = true;
+                toggle.setAttribute('aria-expanded', 'false');
             });
         });
 
