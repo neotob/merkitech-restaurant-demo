@@ -149,3 +149,10 @@ CLAUDE.md for the full design (anchored on the tags/a content fingerprint, not a
 correctly patches a file that predates the fix with no separate migration step). This demo's own
 `/es/`/`/ja/` were the real files that needed - and got - that patch, not just a template repo
 someone might clone from later.
+
+**`withEventClosures()` (an event optionally replacing the day's regular hours, portal migration
+027) ported here 2026-09-04**, same mechanical way as the rest of phase 2 - see
+`merkitech-essentials-starter/CLAUDE.md`'s own note under "Events" for the full design. This demo
+has the `events` feature disabled (see "Identity" above), so the function is a complete no-op here
+in practice, same as `buildEventsJsonLd()`/`buildEventsSection()` already were - kept as shared code
+with the food-truck demo rather than forked out.

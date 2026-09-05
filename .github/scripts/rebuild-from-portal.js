@@ -96,6 +96,47 @@ function isClosed(dayRow) {
     return dayRow.is_closed === 1 || dayRow.is_closed === '1' || dayRow.is_closed === true;
 }
 
+// An event with `closes_regular_hours` set (EventsRepository, migration 027)
+// means the business isn't operating at its usual hours/location that day (a
+// food truck skipping its regular stand for a festival), as opposed to the
+// default additive case (a restaurant's pop-up alongside its normal hours),
+// where an event has zero effect on hours. Rather than a second "is today
+// covered by an event" code path threaded through buildHoursTableRows/
+// updateJsonLd/buildSpecialHoursSection, a flagged event is folded in here as
+// a same-shaped, automatic closed-day special_hours entry - it then flows
+// through every one of those exactly like a manually-entered holiday closure
+// already does. A real special_hours row an admin entered by hand for the
+// same date always wins (this only fills a date nobody already covered) -
+// there's no need to reconcile the two since only one shape ever survives
+// per date. Purely a read-time merge - nothing is ever written back to the
+// portal's special_hours table, so there's no bookkeeping to keep in sync
+// and no portal-side migration risk if this merge logic ever changes.
+//
+// Deliberately doesn't attempt to swap that date's *location* in the regular
+// weekly hours table (buildHoursTableRows) - that table is the recurring
+// weekly schedule (one row per weekday, not per date), so there's no single
+// "this Tuesday" row to override the location on without forking the whole
+// table into per-date rows. The closed-day note (the event's own name) is
+// what points a visitor at the "Upcoming Events" section below for the real
+// time/location instead. This demo has no events feature enabled (see
+// CLAUDE.md), so events is always [] here and this function is a no-op in
+// practice - kept as shared code with the food-truck demo rather than forked.
+function withEventClosures(specialHours, events) {
+    const alreadyCovered = new Set(specialHours.map(entry => entry.date));
+    const synthetic = events
+        .filter(e => e.closes_regular_hours === 1 || e.closes_regular_hours === '1' || e.closes_regular_hours === true)
+        .filter(e => !alreadyCovered.has(e.event_date))
+        .map(e => ({
+            date: e.event_date,
+            end_date: e.event_date,
+            is_closed: 1,
+            open_time: null,
+            close_time: null,
+            note: e.name,
+        }));
+    return [...specialHours, ...synthetic].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+}
+
 // A weekday's display name in a given Intl locale tag ("en-US", "es", ...) -
 // capitalized regardless of the locale's own grammatical convention (some,
 // like Spanish, lowercase weekday names in running text), matching how this
@@ -888,7 +929,7 @@ async function main() {
     const menu = await fetchPortal('menu');
 
     const additionalLanguages = Array.isArray(client.languages) ? client.languages : [];
-    const data = { client, hours, specialHours, events, menu, additionalLanguages };
+    const data = { client, hours, specialHours: withEventClosures(specialHours, events), events, menu, additionalLanguages };
 
     // Root always regenerates first - a new additional language's file is
     // bootstrapped by cloning root's *current* content (see below), so root
