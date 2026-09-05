@@ -130,4 +130,12 @@ template parity, though not activated for that repo's own client), then portal m
 on the `languages` feature and set `clients.languages = 'es,ja'` for client 8 - see "Identity" above.
 A manually-triggered `workflow_dispatch` run confirmed `es/index.html` and `ja/index.html` generate
 correctly (translated chrome, correct hreflang/canonical/`lang`, working language-switcher links),
-and both are live at `restaurant-demo.merkitech.com/es/` and `/ja/`.
+and both are live at `restaurant-demo.merkitech.com/es/` and `/ja/`. Menu item/category translations
+were filled in the same day too (via the portal's own admin login, not the bearer API) - all 3
+categories and 13 items are genuinely translated into both languages, not just chrome text.
+
+**Language switcher redesigned 2026-09-05** - since this is the only demo with 3 total languages
+(en/es/ja), it's the one that actually exercises the dropdown shape of `buildLanguageSwitcher()` -
+see `merkitech-essentials-starter/CLAUDE.md`'s own "Language switcher" note (under "Multi-language,
+phase 2") for the full design; ported here the same mechanical way as the rest of phase 2, no
+adaptation needed.

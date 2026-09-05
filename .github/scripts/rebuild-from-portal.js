@@ -239,12 +239,18 @@ function buildHreflangTags(client, additionalLanguages) {
         .join('\n');
 }
 
-// A single direct link to "the other" language when there are exactly two
-// (the overwhelmingly common case - one client, one extra language) reads
-// simpler than a dropdown/list of one item; only a real list once a client
-// configures three or more, which isn't expected to be common. Visible label
-// is just the uppercased locale code (ES, EN, JA, ...) - avoids needing a
-// "language name in its own language" dictionary for something this small.
+// Deliberately styled distinct from the plain nav links around it (its own
+// "pill" class, not the nav's own `a` styling - see .lang-switch-pill in
+// index.html) so it doesn't read as "just another section link" - requested
+// directly once the plain-text version was live. Two total languages (the
+// overwhelmingly common case - one client, one extra language): a single
+// direct pill-styled link to the other one, no dropdown needed for one
+// item. Three or more: the pill shows the *current* language and toggles a
+// small dropdown of every other one on click (see the toggle script in
+// index.html) - a flat list of 3+ links read as more clutter than a single
+// current-language control that expands on demand. Visible labels are just
+// the uppercased locale code (ES, EN, JA, ...) - avoids needing a "language
+// name in its own language" dictionary for something this small.
 function buildLanguageSwitcher(currentLocale, additionalLanguages) {
     const allLocales = ['en', ...additionalLanguages];
     if (allLocales.length < 2) return '';
@@ -252,9 +258,21 @@ function buildLanguageSwitcher(currentLocale, additionalLanguages) {
     const current = currentLocale || 'en';
     const others = allLocales.filter(loc => loc !== current);
 
-    return others
-        .map(loc => `                <li><a href="${loc === 'en' ? '/' : '/' + loc + '/'}" class="lang-switch">${loc.toUpperCase()}</a></li>`)
+    if (allLocales.length === 2) {
+        const other = others[0];
+        const href = other === 'en' ? '/' : `/${other}/`;
+        return `                <li><a href="${href}" class="lang-switch-pill">${other.toUpperCase()}</a></li>`;
+    }
+
+    const items = others
+        .map(loc => `                        <li><a href="${loc === 'en' ? '/' : '/' + loc + '/'}">${loc.toUpperCase()}</a></li>`)
         .join('\n');
+    return `                <li class="lang-switcher">
+                    <button type="button" class="lang-switch-pill" aria-expanded="false" aria-haspopup="true">${current.toUpperCase()}</button>
+                    <ul class="lang-switch-dropdown" hidden>
+${items}
+                    </ul>
+                </li>`;
 }
 
 // A food truck's day-by-day spot - its own 3rd table column (Day | Time |
