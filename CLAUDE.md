@@ -168,3 +168,14 @@ comment, easy to mistake for one). Business name/street address left untranslate
 proper noun and a real US mailing address, same reasoning `merkitech-portal/CLAUDE.md` already gives
 for why saved-location names/addresses go untranslated generally). Confirmed with a script-driven
 sweep of both locale files afterward that nothing else matching this pattern remained.
+
+**Order/reservation buttons, social links, and a printable menu, ported 2026-09-06** - same
+mechanical port as the rest, see `merkitech-essentials-starter/CLAUDE.md`'s own section for the full
+design (`buildOrderButtons()`/`buildSocialLinks()`/the `@media print` stylesheet). Two real test
+links (an Instagram profile, an OpenTable reservation link) were added to this client (id 8) via the
+portal to verify live, not left as a purely-code-level check - confirmed rendering correctly on
+`/`, `/es/`, and `/ja/`. **This demo is also what `ensureMarkerAt()` (the marker self-heal fix for
+an already-bootstrapped locale file predating a brand-new `PORTAL:*` marker) was verified against
+before shipping** - its real `es/index.html`/`ja/index.html` are exactly the "bootstrapped before
+this marker existed" case that function exists for, same role this demo already played for the
+CSS/JS sync fix earlier.
