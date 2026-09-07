@@ -421,6 +421,28 @@
             display: none;
         }
 
+        /* "Print Menu" (#menuPrintButton) just calls window.print() - the
+           @media print rules further down do the actual formatting. Centered
+           under the section intro, above the filter pills. */
+        .menu-print-button {
+            display: block;
+            margin: 0 auto 1.5rem;
+            padding: 0.5rem 1.25rem;
+            border: 2px solid var(--primary-solid);
+            border-radius: 30px;
+            background: none;
+            color: var(--primary-solid);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .menu-print-button:hover {
+            background: var(--primary-solid);
+            color: white;
+        }
+
         .menu-show-more {
             grid-column: 1 / -1;
             justify-self: center;
@@ -957,6 +979,94 @@
                 font-size: 1.8rem;
             }
         }
+
+        /* Order/reservation buttons (PORTAL:ORDER-BUTTONS) - a secondary row
+           under the hero's main CTA, one pill per client-configured link
+           (DoorDash, UberEats, OpenTable, etc - see CLAUDE.md). Outlined
+           rather than solid so they read as secondary to the main CTA button
+           without competing with it. Empty/absent when a client has none. */
+        .order-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-top: 0.9rem;
+        }
+
+        .order-button {
+            display: inline-block;
+            padding: 0.55rem 1.1rem;
+            border-radius: 999px;
+            border: 2px solid #fff;
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .order-button:hover {
+            background: #fff;
+            color: var(--primary-solid);
+        }
+
+        /* Social links (PORTAL:SOCIAL-LINKS) - icon row in the footer, one per
+           client-configured profile. Empty/absent when a client has none. */
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .social-link {
+            display: inline-flex;
+            width: 34px;
+            height: 34px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            color: inherit;
+            transition: background 0.2s;
+        }
+
+        .social-link:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .social-link svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        /* Print stylesheet - a "Print Menu" button (in the menu section) calls
+           window.print(); this rule set then hides everything except the menu
+           itself and the on-screen filter/collapse controls, which don't make
+           sense on paper (a printed page shows every item, unfiltered). Kept
+           simple and text-first rather than trying to mirror the on-screen
+           layout exactly - see CLAUDE.md. */
+        @media print {
+            #header, .hero, #about, #info, #events, .contact, footer,
+            .menu-filters, #menuShowMore, #menuPrintButton {
+                display: none !important;
+            }
+
+            /* A printed menu is meant to be the complete, definitive one -
+               every item, regardless of today's day-of-week availability, an
+               active on-screen category filter, or the "show more" collapse
+               state. Each of these classes normally means `display: none`. */
+            .menu-item, .menu-item.hidden, .day-unavailable,
+            .menu-preview-hidden, .menu-category-heading.hidden {
+                display: block !important;
+                break-inside: avoid;
+            }
+
+            body, .container {
+                padding: 0;
+                margin: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -995,6 +1105,9 @@
                 <h1>落ち着いて味わう、本格ハワイ料理</h1>
                 <p>カポレイの中心で味わう新鮮なシーフードとアイランドスタイルの料理 — ご予約歓迎、飛び込みのお客様もいつでもアロハの心でお迎えします。</p>
                 <a href="#contact" class="cta-button" data-i18n="cta.get_in_touch">お問い合わせはこちら</a>
+<!-- PORTAL:ORDER-BUTTONS:START -->
+
+<!-- PORTAL:ORDER-BUTTONS:END -->
             </div>
             <svg class="hero-wave" viewBox="0 0 1440 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path fill="currentColor" d="M0,32L60,42.7C120,53,240,75,360,74.7C480,75,600,53,720,42.7C840,32,960,32,1080,37.3C1200,43,1320,53,1380,58.7L1440,64L1440,90L1380,90C1320,90,1200,90,1080,90C960,90,840,90,720,90C600,90,480,90,360,90C240,90,120,90,60,90L0,90Z"></path>
@@ -1065,6 +1178,7 @@
                 <section class="section" id="menu">
                     <h2>メニュー</h2>
                     <p class="section-intro">地元で人気のメニューをご紹介します。全メニューは店内でご覧いただけます。</p>
+                    <button type="button" id="menuPrintButton" class="menu-print-button">メニューを印刷</button>
                     <div class="menu-filters" id="menuFilters">
                         <button class="menu-filter active" data-filter="all" aria-pressed="true">すべて</button>
                     <button class="menu-filter" data-filter="starters" aria-pressed="false">前菜</button>
@@ -1240,6 +1354,9 @@
     </main>
 
     <footer>
+<!-- PORTAL:SOCIAL-LINKS:START -->
+
+<!-- PORTAL:SOCIAL-LINKS:END -->
         <p>&copy; <span id="copyYear"></span> Hale Kai Restaurant. <span data-i18n="footer.rights">無断転載を禁じます。</span></p>
     </footer>
 
@@ -1276,6 +1393,14 @@
                 toggle.setAttribute('aria-expanded', 'false');
             });
         });
+
+        // Not always present - buildMenuSection() omits the whole #menu section (print
+        // button included) for a client with menu content disabled/empty, same as the
+        // guarded block below. The @media print rules in <style> do the actual formatting.
+        const menuPrintButton = document.getElementById('menuPrintButton');
+        if (menuPrintButton) {
+            menuPrintButton.addEventListener('click', () => window.print());
+        }
 
         // Guarded as a whole block, not just individual null-checks - a client with no menu
         // (menu_enabled off, or just no categories yet) now omits the entire #menu section
