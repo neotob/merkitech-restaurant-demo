@@ -524,6 +524,46 @@ ${events.map(e => buildEventCard(e, intlLocale, strings)).join('\n')}
                 </section>`;
 }
 
+// Simplified, non-trademark-exact monochrome glyphs (currentColor fill) - not
+// an attempt at pixel-accurate brand logos, just recognizable enough at 18px
+// in a footer icon row. 'other' (a generic external-link arrow) is also the
+// fallback for any provider this map doesn't recognize, so a portal-side
+// provider list can grow without this needing a matching update every time.
+const SOCIAL_ICONS = {
+    facebook: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13.5 21v-7.6h2.6l.4-3h-3v-1.9c0-.9.2-1.5 1.5-1.5h1.6V4.4c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.2H7.9v3h2.5V21h3.1Z"/></svg>',
+    instagram: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8 3.5h8A4.5 4.5 0 0 1 20.5 8v8a4.5 4.5 0 0 1-4.5 4.5H8A4.5 4.5 0 0 1 3.5 16V8A4.5 4.5 0 0 1 8 3.5Zm0 1.8A2.7 2.7 0 0 0 5.3 8v8A2.7 2.7 0 0 0 8 18.7h8a2.7 2.7 0 0 0 2.7-2.7V8A2.7 2.7 0 0 0 16 5.3H8Zm4 3.2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Zm0 1.8a2.7 2.7 0 1 0 0 5.4 2.7 2.7 0 0 0 0-5.4Zm4.8-3.1a1.05 1.05 0 1 1 0 2.1 1.05 1.05 0 0 1 0-2.1Z"/></svg>',
+    tiktok: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M14 3h2.2c.2 1.6 1.2 2.9 2.8 3.4V8.6a5.7 5.7 0 0 1-2.8-.9v6.1a5.4 5.4 0 1 1-5.4-5.4c.2 0 .4 0 .6.03v2.3a3.1 3.1 0 1 0 2.6 3.07V3Z"/></svg>',
+    x: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 4h3.6l4 5.4L16.9 4H19l-6 7.3L19.4 20H15.8l-4.3-5.8L6.9 20H4.7l6.3-7.6L5 4Z"/></svg>',
+    yelp: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 3c.5 0 1 .4 1 1v6.3c0 .6-.5 1-1.1.9L6.2 9.8a1 1 0 0 1-.5-1.8L11.4 3.3c.2-.2.4-.3.6-.3Zm2.7 9.7 5.6 2.2a1 1 0 0 1 .1 1.8l-5.9 3.2c-.7.4-1.5-.2-1.4-1l.7-6a1 1 0 0 1 .9-1.2Zm-5.5.6c.5.3.6 1 .2 1.5l-3.7 4.7a1 1 0 0 1-1.7-.4L2.6 13a1 1 0 0 1 1.1-1.3l5.5 1.6Zm.7-2.2a1 1 0 0 1 1.4.5l2.2 5.6a1 1 0 0 1-1.3 1.3L6.6 16a1 1 0 0 1-.2-1.8Z"/></svg>',
+    other: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M14 4h6v6h-2V7.4l-7.3 7.3-1.4-1.4L16.6 6H14V4ZM5 6h5v2H5v11h11v-5h2v7H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>',
+};
+
+// One icon-only link per client-configured social profile (PORTAL:SOCIAL-LINKS,
+// in the footer) - purely informational, no portal feature flag (see
+// ClientLinksRepository in merkitech-portal). label becomes the accessible
+// name (aria-label) since the icon itself carries no visible text.
+function buildSocialLinks(socialLinks) {
+    if (!socialLinks.length) return '';
+    const items = socialLinks
+        .map(link => `            <a href="${escapeHtml(link.url)}" class="social-link" target="_blank" rel="noopener" aria-label="${escapeHtml(link.label)}">${SOCIAL_ICONS[link.provider] || SOCIAL_ICONS.other}</a>`)
+        .join('\n');
+    return `        <div class="social-links">\n${items}\n        </div>`;
+}
+
+// One pill button per client-configured order/reservation link
+// (PORTAL:ORDER-BUTTONS, under the hero's main CTA) - a shortcut to a
+// platform the client already uses (DoorDash, UberEats, OpenTable, etc), not
+// a built-in ordering system. label is the actual visible button text (not
+// localized - client-entered content, same as an event's own name/location -
+// see CLAUDE.md).
+function buildOrderButtons(orderLinks) {
+    if (!orderLinks.length) return '';
+    const buttons = orderLinks
+        .map(link => `                <a href="${escapeHtml(link.url)}" class="order-button" target="_blank" rel="noopener">${escapeHtml(link.label)}</a>`)
+        .join('\n');
+    return `                <div class="order-buttons">\n${buttons}\n                </div>`;
+}
+
 function buildMenuFilters(categories, locale) {
     return categories
         .map(cat => `                    <button class="menu-filter" data-filter="${slugify(cat.name)}" aria-pressed="false">${escapeHtml(localizedField(cat, locale, 'name'))}</button>`)
@@ -546,6 +586,7 @@ function buildMenuSection(categories, locale, strings) {
     return `                <section class="section" id="menu">
                     <h2>${escapeHtml(strings['menu.heading'])}</h2>
                     <p class="section-intro">${escapeHtml(strings['menu.intro'])}</p>
+                    <button type="button" id="menuPrintButton" class="menu-print-button">${escapeHtml(strings['menu.print'])}</button>
                     <div class="menu-filters" id="menuFilters">
                         <button class="menu-filter active" data-filter="all" aria-pressed="true">${escapeHtml(strings['menu.filter_all'])}</button>
 ${buildMenuFilters(categories, locale)}
@@ -878,12 +919,57 @@ function syncTemplateInfrastructure(html, rootHtml) {
     return html;
 }
 
+// See the comment at its call site in buildLocaleFile() for why this exists.
+// searchFrom locates a stable structural anchor (present in every locale
+// file regardless of translated text nearby); afterTag, if given, is a
+// closing tag to skip past first (so the marker lands after a whole element,
+// not mid-way through one whose inner text differs per locale) - null means
+// insert immediately after searchFrom itself.
+function ensureMarkerAt(html, markerName, searchFrom, afterTag) {
+    const start = `<!-- PORTAL:${markerName}:START -->`;
+    if (html.includes(start)) return html;
+
+    const anchorIdx = html.indexOf(searchFrom);
+    if (anchorIdx === -1) {
+        throw new Error(`ensureMarkerAt: anchor "${searchFrom}" not found for ${markerName}`);
+    }
+
+    let insertAt = anchorIdx + searchFrom.length;
+    if (afterTag) {
+        const tagIdx = html.indexOf(afterTag, anchorIdx);
+        if (tagIdx === -1) {
+            throw new Error(`ensureMarkerAt: "${afterTag}" not found after anchor for ${markerName}`);
+        }
+        insertAt = tagIdx + afterTag.length;
+    }
+
+    const end = `<!-- PORTAL:${markerName}:END -->`;
+    return html.slice(0, insertAt) + `\n${start}\n${end}` + html.slice(insertAt);
+}
+
 function buildLocaleFile(path, locale, data) {
-    const { client, hours, specialHours, events, menu, additionalLanguages } = data;
+    const { client, hours, specialHours, events, menu, additionalLanguages, socialLinks, orderLinks } = data;
     const intlLocale = locale || 'en-US'; // matches this script's pre-existing hardcoded default
     const strings = loadStrings(locale);
 
     let html = fs.readFileSync(path, 'utf8');
+
+    // A locale file bootstrapped before a given PORTAL:* marker existed in
+    // root doesn't have it either (it was cloned from root's content at the
+    // time) - replaceBetweenMarkers() would throw on a marker that isn't
+    // there at all, unlike syncTemplateInfrastructure()'s CSS/JS re-sync
+    // (which handles a *different* class of this same "bootstrap once, then
+    // never catches up" problem - see CLAUDE.md). Rather than one-off
+    // patching every locale file by hand each time a new portal-driven
+    // section is added, inject a bare (empty) marker pair at the same
+    // structural anchor point root itself uses, if it isn't already present
+    // - a genuine no-op for root (already has every marker) and for any
+    // locale file bootstrapped after a given marker existed.
+    if (locale) {
+        html = ensureMarkerAt(html, 'ORDER-BUTTONS', 'data-i18n="cta.get_in_touch"', '</a>');
+        html = ensureMarkerAt(html, 'SOCIAL-LINKS', '<footer>', null);
+    }
+
     html = updateJsonLd(html, hours, specialHours, client);
     html = updateEventsJsonLd(html, events);
     const aboutPhoto = buildAboutPhoto(client);
@@ -896,6 +982,8 @@ function buildLocaleFile(path, locale, data) {
     html = replaceBetweenMarkers(html, 'LOCATION-COLUMN', buildLocationColumn(client, strings));
     html = replaceBetweenMarkers(html, 'EVENTS-SECTION', buildEventsSection(events, intlLocale, strings));
     html = replaceBetweenMarkers(html, 'MENU-SECTION', buildMenuSection(menu, locale, strings));
+    html = replaceBetweenMarkers(html, 'ORDER-BUTTONS', buildOrderButtons(orderLinks));
+    html = replaceBetweenMarkers(html, 'SOCIAL-LINKS', buildSocialLinks(socialLinks));
     html = replaceBetweenMarkers(html, 'HREFLANG', buildHreflangTags(client, additionalLanguages));
     html = replaceBetweenMarkers(html, 'LANG-SWITCHER', buildLanguageSwitcher(locale, additionalLanguages));
     html = setHtmlLang(html, locale);
@@ -927,9 +1015,15 @@ async function main() {
     const specialHours = await fetchPortal('special_hours');
     const events = await fetchPortal('events');
     const menu = await fetchPortal('menu');
+    const links = await fetchPortal('links');
 
     const additionalLanguages = Array.isArray(client.languages) ? client.languages : [];
-    const data = { client, hours, specialHours: withEventClosures(specialHours, events), events, menu, additionalLanguages };
+    const socialLinks = links.filter(l => l.category === 'social');
+    const orderLinks = links.filter(l => l.category === 'order');
+    const data = {
+        client, hours, specialHours: withEventClosures(specialHours, events), events, menu,
+        additionalLanguages, socialLinks, orderLinks,
+    };
 
     // Root always regenerates first - a new additional language's file is
     // bootstrapped by cloning root's *current* content (see below), so root
